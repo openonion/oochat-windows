@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Matches Core, which needs Windows-only APIs (DPAPI, winsqlite3). -->
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <!-- Not a VSTest project: a trimmed build has no test host to load into, which is the
+         entire reason this harness is a plain console app. Keeps `dotnet test` from finding it. -->
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+  <!--
+    THE POINT OF THIS PROJECT.
+
+    Publishing the desktop app with PublishTrimmed=true makes the SDK set the
+    JsonSerializerIsReflectionEnabledByDefault feature switch to false. Reflection-based
+    JsonSerializer calls then do not merely risk having a member trimmed away — they throw
+    NotSupportedException on the very first call. The 2026-07-25 release audit found that the
+    hard way, via a Tool Activity timeline that restored as empty in Release and worked
+    perfectly in Debug.
+
+    Setting the switch here unconditionally means an ordinary `dotnet run` already reproduces
+    that runtime behaviour, so the fast loop catches a reflection-based serializer the moment it
+    is reintroduced. Publishing this project trimmed adds the second half — that the linker also
+    kept everything these paths reach.
+  -->
+  <PropertyGroup>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>full</TrimMode>
+    <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <!-- Self-contained is implied by trimming; ReadyToRun is irrelevant to what this checks
+         and only makes the publish slower. -->
+    <PublishReadyToRun>false</PublishReadyToRun>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ConnectOnion.Protocol\ConnectOnion.Protocol.csproj" />
+    <ProjectReference Include="..\..\ConnectOnion.WinUIClient.Core\ConnectOnion.WinUIClient.Core.csproj" />
+  </ItemGroup>
+
+</Project>

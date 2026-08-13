@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="ConnectOnion.WinUIClient.Controls.OfflineNoticeBar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ic="using:FluentIcons.WinUI"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!-- Shared "agent is offline" card used by ChatPage and AgentDetailPage.
+         Layout attributes (Grid.Row, alignment, margin, MaxWidth, Visibility)
+         are set by the host on the <OfflineNoticeBar/> element itself. -->
+    <Border CornerRadius="10"
+            Padding="14,10"
+            Background="{ThemeResource AttentionSubtleBrush}"
+            BorderBrush="{ThemeResource AttentionBrush}"
+            BorderThickness="3,1,1,1">
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <ic:FluentIcon Grid.Column="0"
+                           Icon="PlugDisconnected"
+                           IconVariant="Regular"
+                           IconSize="Size20"
+                           Foreground="{ThemeResource AttentionBrush}"
+                           VerticalAlignment="Center" />
+
+            <StackPanel Grid.Column="1"
+                        MinWidth="0"
+                        VerticalAlignment="Center"
+                        Spacing="2">
+                <TextBlock x:Uid="OfflineTitle" Text="Agent is offline"
+                           FontSize="{StaticResource ProductBodyFontSize}"
+                           FontWeight="SemiBold"
+                           Foreground="{ThemeResource AttentionBrush}" />
+                <TextBlock Text="{x:Bind Detail, Mode=OneWay}"
+                           FontSize="{StaticResource ProductCaptionFontSize}"
+                           Foreground="{ThemeResource TextSecondaryBrush}"
+                           TextTrimming="CharacterEllipsis"
+                           Visibility="{x:Bind Detail, Mode=OneWay, Converter={StaticResource StringToVis}}" />
+                <TextBlock Text="{x:Bind StatusMessage, Mode=OneWay}"
+                           FontSize="{StaticResource ProductCaptionFontSize}"
+                           FontWeight="SemiBold"
+                           Foreground="{ThemeResource DangerBrush}"
+                           TextWrapping="Wrap"
+                           Visibility="{x:Bind StatusMessage, Mode=OneWay, Converter={StaticResource StringToVis}}" />
+            </StackPanel>
+
+            <Grid Grid.Column="2" VerticalAlignment="Center">
+                <ProgressRing Width="20"
+                              Height="20"
+                              Foreground="{ThemeResource AttentionBrush}"
+                              IsActive="{x:Bind IsChecking, Mode=OneWay}"
+                              Visibility="{x:Bind IsChecking, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                <Button MinWidth="0"
+                        Padding="10,6"
+                        Style="{StaticResource AccentButtonStyle}"
+                        IsEnabled="{x:Bind CanRecheck, Mode=OneWay}"
+                        Click="Recheck_Click"
+                        Visibility="{x:Bind IsChecking, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=invert}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <ic:FluentIcon Icon="ArrowClockwise"
+                                       IconVariant="Regular"
+                                       IconSize="Size16" />
+                        <TextBlock x:Uid="OfflineRecheck" Text="Recheck" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

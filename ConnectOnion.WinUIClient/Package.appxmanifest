@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  IgnorableNamespaces="uap rescap com desktop">
+
+  <!--
+    PACKAGE IDENTITY — see docs/RELEASE.md before touching any of this.
+
+    Name + Publisher together are the *upgrade identity*. Windows treats a package whose pair
+    differs as a completely different application: it installs side by side instead of upgrading,
+    and it gets a different %LOCALAPPDATA%\Packages\<Name>_<publisher hash>\ folder, so the user's
+    conversations and their DPAPI-protected identity are still on disk but the new install cannot
+    see them. There is no rename path afterwards. Both values are therefore fixed as of the first
+    release and must never change.
+
+    Publisher must match the signing certificate's subject byte for byte or the package will not
+    install. The value below is the default for local and self-signed builds; the release workflow
+    overwrites it with the SIGNING_PUBLISHER_DN secret so the manifest always agrees with whatever
+    certificate actually signed it.
+
+    Version is 0.0.0.0 on purpose — an obviously-not-a-release placeholder. Every packaged build
+    that matters gets its version from the git tag via scripts/Set-PackageIdentity.ps1; a package
+    that reaches a user still carrying 0.0.0.0 means the release pipeline was bypassed.
+  -->
+  <Identity
+    Name="ai.openonion.oochat"
+    Publisher="CN=ConnectOnion PTY LTD"
+    Version="0.0.0.0" />
+
+  <!-- Vestigial: the mp: namespace is a Windows Phone leftover that desktop ignores. Left at its
+       original GUID because nothing reads it and churning it buys nothing. -->
+  <mp:PhoneIdentity PhoneProductId="779a2035-a8d1-4bc8-91cf-82aecda14cc5" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+
+  <Properties>
+    <DisplayName>ConnectOnion Desktop</DisplayName>
+    <PublisherDisplayName>ConnectOnion</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="x-generate"/>
+  </Resources>
+
+  <Applications>
+    <Application Id="App"
+      Executable="$targetnametoken$.exe"
+      EntryPoint="$targetentrypoint$">
+      <uap:VisualElements
+        DisplayName="ConnectOnion Desktop"
+        Description="Chat with ConnectOnion agents over WebSocket."
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
+        <uap:SplashScreen Image="Assets\SplashScreen.png" />
+      </uap:VisualElements>
+
+      <!-- Windows App SDK app-notification activation. Unpackaged runs register this COM
+           activator automatically via AppNotificationManager.Register(); a packaged (MSIX)
+           app must declare it here, or a clicked toast launches the app with no notification
+           arguments and cannot navigate to the message's conversation. The CLSID must match
+           between the toastNotificationActivation extension and the COM class registration. -->
+      <Extensions>
+        <desktop:Extension Category="windows.toastNotificationActivation">
+          <desktop:ToastNotificationActivation ToastActivatorCLSID="8EC654C5-891F-4E91-A278-74ECB01540C0" />
+        </desktop:Extension>
+        <com:Extension Category="windows.comServer">
+          <com:ComServer>
+            <com:ExeServer Executable="ConnectOnion.WinUIClient.exe" DisplayName="ConnectOnion App Notifications" Arguments="----AppNotificationActivated:">
+              <com:Class Id="8EC654C5-891F-4E91-A278-74ECB01540C0" DisplayName="ConnectOnion App Notification Activator" />
+            </com:ExeServer>
+          </com:ComServer>
+        </com:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+    <DeviceCapability Name="microphone" />
+  </Capabilities>
+</Package>

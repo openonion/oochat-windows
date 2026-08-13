@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl x:Class="ConnectOnion.WinUIClient.Controls.KeyboardShortcutsDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ic="using:FluentIcons.WinUI"
+    xmlns:models="using:ConnectOnion.WinUIClient.Models"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch"
+    AutomationProperties.AutomationId="KeyboardShortcutsOverlay"
+    Visibility="Collapsed"
+    IsHitTestVisible="False"
+    IsTabStop="False">
+    <UserControl.Resources>
+        <Style x:Key="ShortcutsCloseButtonStyle" TargetType="Button" BasedOn="{StaticResource SmallIconButtonStyle}">
+            <Setter Property="Width" Value="36" /><Setter Property="Height" Value="36" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid x:Name="OverlayRoot" KeyDown="OverlayRoot_KeyDown">
+        <Rectangle Fill="{ThemeResource SettingsBackdropBrush}" Tapped="Backdrop_Tapped" />
+
+        <Border x:Name="ModalContainer" MaxWidth="640" MaxHeight="760" Margin="24"
+                HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                Background="{ThemeResource SettingsContentBrush}" BorderBrush="{ThemeResource SettingsModalBorderBrush}"
+                BorderThickness="1" CornerRadius="14" Tapped="ModalContainer_Tapped">
+            <Border.Shadow><ThemeShadow /></Border.Shadow>
+
+            <Grid MinWidth="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Header: title + close, stays fixed while the list scrolls. -->
+                <Grid Padding="24,20,14,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                <TextBlock x:Uid="ShortcutsDialogTitle" AutomationProperties.HeadingLevel="Level1" Text="Keyboard shortcuts" Style="{StaticResource TitleTextBlockStyle}"
+                               Foreground="{ThemeResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                    <Button x:Uid="KeyboardShortcutsClose" Grid.Column="1" TabIndex="1" Style="{StaticResource ShortcutsCloseButtonStyle}" Click="CloseButton_Click"
+                            AutomationProperties.AutomationId="KeyboardShortcutsCloseButton"
+                            AutomationProperties.Name="Close keyboard shortcuts" ToolTipService.ToolTip="Close (Esc)">
+                        <ic:FluentIcon Icon="Dismiss" IconVariant="Regular" IconSize="Size20"
+                                       Foreground="{ThemeResource TextSecondaryBrush}" />
+                    </Button>
+                </Grid>
+
+                <!-- Search: fixed, filters the list live. -->
+                <Border Grid.Row="1" Margin="24,0,24,10" Padding="10,0" CornerRadius="8"
+                        Background="{ThemeResource SurfaceSecondaryBrush}"
+                        BorderBrush="{ThemeResource BorderSubtleBrush}" BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ic:FluentIcon Icon="Search" IconVariant="Regular" IconSize="Size16"
+                                       VerticalAlignment="Center" Foreground="{ThemeResource TextSecondaryBrush}" />
+                        <TextBox x:Uid="ShortcutsDialogSearch" x:Name="SearchBox" Grid.Column="1" TabIndex="0" BorderThickness="0" Background="Transparent"
+                                 AutomationProperties.AutomationId="ShortcutsSearchBox"
+                                 PlaceholderText="Search shortcuts" TextChanged="SearchBox_TextChanged"
+                                 AutomationProperties.Name="Search shortcuts" />
+                    </Grid>
+                </Border>
+
+                <!-- Only this region scrolls. -->
+                <ScrollViewer x:Name="ContentScroller" Grid.Row="2" Padding="24,2,20,20"
+                              HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{x:Bind Vm.Groups, Mode=OneWay}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:KeyboardShortcutGroup">
+                                    <StackPanel Margin="0,8,0,4">
+                                        <TextBlock Text="{x:Bind Title}" Style="{StaticResource BodyStrongTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextPrimaryBrush}" Margin="0,6,0,4" />
+                                        <ItemsControl ItemsSource="{x:Bind Shortcuts}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="models:KeyboardShortcutItem">
+                                                    <Grid MinHeight="36" Padding="2,5" ColumnSpacing="16">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center"
+                                                                   TextWrapping="Wrap" Foreground="{ThemeResource TextPrimaryBrush}" />
+
+                                                        <!-- One or more equivalent combos, side by side. The group's
+                                                             AutomationProperties.Name carries the full spoken combo; the
+                                                             keycaps are hidden from the a11y tree to avoid double reads. -->
+                                                        <ItemsControl Grid.Column="1" VerticalAlignment="Center"
+                                                                      ItemsSource="{x:Bind KeyBindings}"
+                                                                      AutomationProperties.Name="{x:Bind KeysAccessibleText}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <StackPanel Orientation="Horizontal" Spacing="14" />
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate x:DataType="models:KeyBinding">
+                                                                    <ItemsControl ItemsSource="{x:Bind Tokens}"
+                                                                                  AutomationProperties.AccessibilityView="Raw">
+                                                                        <ItemsControl.ItemsPanel>
+                                                                            <ItemsPanelTemplate>
+                                                                                <StackPanel Orientation="Horizontal" Spacing="5"
+                                                                                            VerticalAlignment="Center" />
+                                                                            </ItemsPanelTemplate>
+                                                                        </ItemsControl.ItemsPanel>
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate x:DataType="models:KeyToken">
+                                                                                <Grid>
+                                                                                    <Border Visibility="{x:Bind IsKeycap, Converter={StaticResource BoolToVis}}"
+                                                                                            Background="{ThemeResource SurfaceElevatedBrush}"
+                                                                                            BorderBrush="{ThemeResource BorderStrongBrush}"
+                                                                                            BorderThickness="1" CornerRadius="6"
+                                                                                            Padding="8,2" MinWidth="27" MinHeight="27">
+                                                                                        <TextBlock Text="{x:Bind Text}" FontSize="{StaticResource ProductCaptionFontSize}"
+                                                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                                                   Foreground="{ThemeResource TextSecondaryBrush}" />
+                                                                                    </Border>
+                                                                                    <TextBlock Visibility="{x:Bind IsSeparator, Converter={StaticResource BoolToVis}}"
+                                                                                               Text="+" FontSize="{StaticResource ProductCaptionFontSize}" VerticalAlignment="Center"
+                                                                                               Foreground="{ThemeResource TextTertiaryBrush}" />
+                                                                                </Grid>
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Empty state -->
+                        <StackPanel Visibility="{x:Bind Vm.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                                    HorizontalAlignment="Center" Margin="0,52" Spacing="6">
+                        <TextBlock x:Uid="ShortcutsDialogEmpty" Text="No shortcuts found" Style="{StaticResource BodyStrongTextBlockStyle}"
+                                       HorizontalAlignment="Center" Foreground="{ThemeResource TextPrimaryBrush}" />
+                        <TextBlock x:Uid="ShortcutsDialogEmptyHint" Text="Try a different search term." HorizontalAlignment="Center"
+                                       Foreground="{ThemeResource TextSecondaryBrush}" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

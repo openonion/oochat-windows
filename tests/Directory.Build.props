@@ -1,0 +1,51 @@
+<Project>
+  <!--
+    Applies to every project under tests/. Imports the repo-root props first so the version,
+    analyzer and audit settings there still apply — without this the nearest-file-wins rule would
+    silently drop all of them for the test projects.
+  -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <!--
+      Pin test output to bin\$(Configuration)\ regardless of $(Platform).
+
+      MSBuild's default output path is bin\$(Platform)\$(Configuration)\ whenever Platform is
+      anything but AnyCPU. The WinUI app genuinely needs -p:Platform=x64, and the documented build
+      command passes it at the solution — so it is a very small step to also pass it to a
+      `dotnet test`, at which point the test assembly is written to bin\x64\Debug\ while the plain
+      solution build wrote it to bin\Debug\. Both directories then exist, and a `dotnet test`
+      passing that platform plus the no-build switch silently runs whichever stale copy is sitting
+      in the x64 one.
+
+      That is not hypothetical. It reported a passing suite as one failure against an AutomationId
+      that no longer exists in the source, and separately reported the integration suite as 92
+      tests when it actually has 164 — a wrong answer in both directions, from a months-old binary,
+      with nothing in the output hinting that the run was stale.
+
+      CI dodges this by never passing -p:Platform to a test step (see the BUILD_PLATFORM note in
+      ci.yml). This makes the dodge unnecessary: with one output path per configuration, passing
+      the platform or not resolves to the same assembly, so there is no second copy to go stale.
+    -->
+    <AppendPlatformToOutputPath>false</AppendPlatformToOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!--
+      xUnit1051 — "pass TestContext.Current.CancellationToken to methods that accept one".
+
+      New in xunit v3 and it fires 412 times across the four suites, because every existing
+      `await something(ct)` call site predates the rule. The repo builds warning-clean, so leaving
+      it on would mean either 412 warnings permanently or a 412-call-site mechanical edit folded
+      into the v3 migration commit — and a diff that large, touching only argument lists, is one
+      nobody can meaningfully review. A real defect hidden in it would ship.
+
+      The rule is a responsiveness improvement, not a correctness one: it lets the runner cancel a
+      test that is blocked mid-await. That matters for long or hanging tests; these suites finish
+      in seconds. Suppressed here rather than per-file so the decision is in one place, and so
+      removing this line is all it takes to adopt the rule later — ideally per project, as a
+      change of its own.
+    -->
+    <NoWarn>$(NoWarn);xUnit1051</NoWarn>
+  </PropertyGroup>
+</Project>

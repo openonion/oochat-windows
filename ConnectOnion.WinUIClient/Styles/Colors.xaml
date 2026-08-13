@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Semantic color tokens (raw Color values only — see Brushes.xaml for the
+    SolidColorBrush layer pages actually bind to). The palette is three colors:
+    black, white, gray. Everything below is a step on that neutral scale.
+
+    Naming: <Concept>Color, grouped by role (Brand / Surface / Text / Border /
+    Status / Search / Chat / Sidebar), not by literal hue. Dark theme is a
+    distinct, hand-tuned palette (neutral near-black, never pure #000) — not an
+    inverted copy of Light.
+
+    How the three colors divide up:
+
+    1. GRAY is the actionable/attention color — buttons, links, focus rings, the
+       sidebar selection rail, success/warning/danger status. Darker shades
+       carry white text; lighter shades carry dark text.
+
+    2. BLACK is the ground for text. All text colors are neutral grays stepped
+       from near-black to lighter gray for tertiary/disabled.
+
+    3. WHITE is the chat and card surface; the app ground is a hair off-white
+       so a white card reads as lifted rather than flush.
+
+    BrandPrimary vs BrandAccent: Primary owns anything text-bearing (it is what
+    AccentFillColorDefaultBrush resolves to); Accent is the lighter gray for
+    decoration only. TextOnBrand inverts per theme: light's BrandPrimary is
+    dark gray with white text; dark's BrandPrimary is light gray with near-black
+    text.
+-->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ResourceDictionary.ThemeDictionaries>
+
+        <ResourceDictionary x:Key="Light">
+
+            <!-- Brand — dark gray, monochrome. -->
+            <Color x:Key="BrandPrimaryColor">#FF333333</Color>
+            <Color x:Key="BrandPrimaryHoverColor">#FF444444</Color>
+            <Color x:Key="BrandPrimaryPressedColor">#FF1A1A1A</Color>
+            <Color x:Key="BrandPrimarySubtleColor">#FFEBEBEB</Color>
+            <Color x:Key="BrandAccentColor">#FF555555</Color>
+            <Color x:Key="BrandAccentHoverColor">#FF666666</Color>
+            <Color x:Key="BrandAccentPressedColor">#FF333333</Color>
+            <Color x:Key="BrandOnPrimaryColor">#FFFFFFFF</Color>
+
+            <!-- Background / Surface — off-white ground, pure white for lifted cards. -->
+            <Color x:Key="AppBackgroundColor">#FFFAFAF9</Color>
+            <Color x:Key="SurfacePrimaryColor">#FFFFFFFF</Color>
+            <Color x:Key="SurfaceSecondaryColor">#FFF4F4F3</Color>
+            <Color x:Key="SurfaceTertiaryColor">#FFEBEBEA</Color>
+            <Color x:Key="SurfaceElevatedColor">#FFFFFFFF</Color>
+            <Color x:Key="SurfaceHoverColor">#FFF0F0EF</Color>
+            <Color x:Key="SurfacePressedColor">#FFE4E4E3</Color>
+            <Color x:Key="SurfaceSelectedColor">#FFEBEBEB</Color>
+
+            <!-- Text — neutral, no hue cast.
+                 Secondary/Tertiary are spaced farther apart than early builds so process
+                 chrome (Tertiary) can sit clearly below supporting copy (Secondary) without
+                 inventing a fourth weight. -->
+            <Color x:Key="TextPrimaryColor">#FF1A1A1A</Color>
+            <Color x:Key="TextSecondaryColor">#FF4A4A49</Color>
+            <Color x:Key="TextTertiaryColor">#FF8A8A87</Color>
+            <Color x:Key="TextDisabledColor">#FFB5B5B3</Color>
+            <Color x:Key="TextOnBrandColor">#FFFFFFFF</Color>
+            <Color x:Key="TextLinkColor">#FF333333</Color>
+            <Color x:Key="TextLinkHoverColor">#FF1A1A1A</Color>
+
+            <!-- Border -->
+            <Color x:Key="BorderSubtleColor">#FFEDEDEC</Color>
+            <Color x:Key="BorderDefaultColor">#FFE0E0DF</Color>
+            <Color x:Key="BorderStrongColor">#FFBFBFBE</Color>
+            <Color x:Key="DividerColor">#FFE8E8E7</Color>
+            <Color x:Key="FocusBorderColor">#FF555555</Color>
+
+            <!-- Status. Danger is red and Warning is amber — the two states a user scans a
+                 tool card *for*. Info stays on the neutral gray scale.
+
+                 Warning was grey here, on the reasoning that colouring it too would turn the
+                 card into a traffic light. What actually made that true was Success: a tool
+                 turn is mostly successful steps, so a green badge per row was the column of
+                 colour, and the one row that needed attention had to shout over it. Success
+                 is now muted to neutral wherever it repeats (see "muted-success" in
+                 ToolStatusToBrushConverter), which frees warning to be a real warning — the
+                 palette now spends colour only on rows that want the eye. Grey also failed
+                 the job outright once the ⚠ became a themed FluentIcon: the character used to
+                 arrive pre-coloured from Segoe UI Emoji, so nobody noticed the token behind
+                 it was neutral.
+
+                 #9A6700 is 4.9:1 on SurfacePrimary — passes AA for text, and comfortably
+                 clears the 3:1 that the 12px glyphs carrying it actually need. -->
+            <Color x:Key="SuccessColor">#FF1B7A4B</Color>
+            <!-- One amber for "caution", not two. WarningColor and AttentionColor were
+                 #9A6700 and #B26A00 — visually indistinguishable, but handed out by different
+                 code paths for the same state: InteractiveVisualTone.Warning resolved to
+                 Attention while ToolStatusToBrushConverter and the diff problem icon reached for
+                 Warning, so "something needs your attention" was one shade or the other
+                 depending on which card you were looking at. Kept as a separate key because ~40
+                 call sites name it; it is now an alias. Danger stays distinct — that one is a
+                 different signal. -->
+            <Color x:Key="WarningColor">#FF9A6700</Color>
+            <Color x:Key="DangerColor">#FFB3261E</Color>
+            <Color x:Key="InfoColor">#FF6E6E6C</Color>
+
+            <!-- In-flight status (the event dot / step glyph while a turn is running).
+                 Distinct from Success to avoid rendering running and done the same
+                 color. Dot/glyph only — non-text, so the 3:1 bar applies (3.3:1). -->
+            <Color x:Key="StatusRunningColor">#FF666666</Color>
+
+            <!-- Attention — "the agent is blocked on you". The third hue allowed off the
+                 neutral scale, and it is scoped to exactly one thing: an interactive card
+                 (ask_user / approval / plan_review) that is still awaiting an answer. A
+                 running *tool* keeps StatusRunning gray, because the user has nothing to do
+                 about it; amber here means the turn cannot proceed until they act, which is
+                 what makes a pending card findable when scrolling back through a long run.
+                 It shares WarningColor's AA-compliant contrast on SurfacePrimary. -->
+            <Color x:Key="AttentionColor">#FF9A6700</Color>
+
+            <!-- Tinted washes for the interactive cards: a pending card's ground, and the
+                 hover fill under an affirmative / negative choice. Kept far lighter than
+                 their solid counterparts — these sit *behind* body text, so they must not
+                 move its contrast (each is >= 18:1 against TextPrimary). -->
+            <Color x:Key="AttentionSubtleColor">#FFFDF4E3</Color>
+            <Color x:Key="SuccessSubtleColor">#FFE9F5EE</Color>
+            <Color x:Key="DangerSubtleColor">#FFFBECEA</Color>
+
+            <!-- Search — the two hues allowed off the neutral scale alongside Success
+                 green. A plain match is highlighter YELLOW (bright in both themes so a
+                 hit stands out on either ground) with dark text; the one match the user
+                 is parked on is an ochre RED with light text, so "current" reads
+                 distinctly from "also matched". The two fills now sit at opposite ends
+                 of the light/dark range, so the current match carries its own text token
+                 (SearchCurrentText) instead of sharing SearchMatchText. -->
+            <Color x:Key="SearchMatchBackgroundColor">#FFFFE066</Color>
+            <Color x:Key="SearchCurrentBackgroundColor">#FFA83E32</Color>
+            <Color x:Key="SearchMatchTextColor">#FF1A1A1A</Color>
+            <Color x:Key="SearchCurrentTextColor">#FFFFFFFF</Color>
+
+            <!-- Chat — the agent bubble matches the chat ground rather than
+                 contrasting with it: the agent's turn is the page, and only the
+                 user's turn is a distinct object on it. -->
+            <Color x:Key="ChatBackgroundColor">#FFFFFFFF</Color>
+            <Color x:Key="UserMessageBackgroundColor">#FFE8E8E7</Color>
+            <Color x:Key="AgentMessageBackgroundColor">#FFFFFFFF</Color>
+            <Color x:Key="SystemMessageBackgroundColor">#FFF4F4F3</Color>
+            <Color x:Key="ChatInputBackgroundColor">#FFFFFFFF</Color>
+            <Color x:Key="CodeBackgroundColor">#FFF4F4F3</Color>
+            <Color x:Key="InlineCodeBackgroundColor">#FFECECEB</Color>
+            <Color x:Key="CodeTextColor">#FF333333</Color>
+
+            <!-- Syntax accents for a structured (JSON) tool result. Deliberately a narrow,
+                 low-saturation set rather than a full editor theme: this is a read-only body in a
+                 chat card, so the colours only need to separate the four things a reader scans
+                 for — the key, the value, and whether that value is text or a literal. Keys take
+                 the brand hue so the structure reads as part of the app rather than as an
+                 imported code block; punctuation drops to tertiary so braces recede. -->
+            <Color x:Key="SyntaxKeyColor">#FF6D4AB8</Color>
+            <Color x:Key="SyntaxStringColor">#FF1F7A4D</Color>
+            <Color x:Key="SyntaxNumberColor">#FFB2591B</Color>
+            <Color x:Key="SyntaxKeywordColor">#FFA3306E</Color>
+            <Color x:Key="SyntaxPunctuationColor">#FF9A9A99</Color>
+            <!-- Console transcripts: the command line is the anchor a reader scans for, so it
+                 takes the strongest weight of the three; the section label is quieter than a
+                 command but still lifted off the body; a non-zero exit reuses the danger hue so
+                 it reads as a failure everywhere else in the app does. -->
+            <Color x:Key="SyntaxCommandColor">#FF1A1A1A</Color>
+            <Color x:Key="SyntaxLabelColor">#FF6E6E6D</Color>
+            <Color x:Key="SyntaxFailureColor">#FFC0392B</Color>
+
+            <!-- Composer -->
+            <!-- The compact connection legend under the input gives every transport phase its
+                 own hue. These are text colors as well as dot colors, so each clears WCAG AA
+                 against ChatInputBackgroundColor rather than relying on the dot alone. -->
+            <Color x:Key="ComposerStatusIdleColor">#FF667085</Color>
+            <Color x:Key="ComposerStatusConnectingColor">#FF2563EB</Color>
+            <Color x:Key="ComposerStatusConnectedColor">#FF16794D</Color>
+            <Color x:Key="ComposerStatusRunningColor">#FF6D28D9</Color>
+            <Color x:Key="ComposerStatusWaitingColor">#FF946200</Color>
+            <Color x:Key="ComposerStatusReconnectingColor">#FFB54708</Color>
+            <Color x:Key="ComposerStatusOfflineColor">#FFB3261E</Color>
+            <Color x:Key="ComposerStopButtonBackgroundColor">#FF2E2E2E</Color>
+            <Color x:Key="ComposerStopButtonForegroundColor">#FFFFFFFF</Color>
+            <Color x:Key="ComposerDisabledButtonBackgroundColor">#FFE6E6E5</Color>
+            <Color x:Key="ComposerDisabledButtonForegroundColor">#FFA0A09F</Color>
+
+            <!-- Sidebar -->
+            <Color x:Key="SidebarBackgroundColor">#FFF7F7F6</Color>
+            <Color x:Key="SidebarItemHoverColor">#FFF0F0EF</Color>
+            <Color x:Key="SidebarItemPressedColor">#FFE8E8E7</Color>
+            <Color x:Key="SidebarItemSelectedColor">#FFEBEBEB</Color>
+            <Color x:Key="SidebarSelectedAccentColor">#FF333333</Color>
+
+            <!-- Settings modal -->
+            <Color x:Key="SettingsBackdropColor">#99141414</Color>
+            <Color x:Key="SettingsNavigationColor">#FFF4F4F3</Color>
+            <Color x:Key="SettingsContentColor">#FFFAFAF9</Color>
+            <Color x:Key="SettingsModalBorderColor">#FFE0E0DF</Color>
+
+            <!-- Agent avatar: deliberately monochrome, not brand-colored. It inverts per theme
+                 (ink on light, paper on dark) so the initial keeps maximum contrast either way. -->
+            <Color x:Key="AvatarBackgroundColor">#FF1A1A1A</Color>
+            <Color x:Key="AvatarForegroundColor">#FFFFFFFF</Color>
+            <Color x:Key="AvatarBorderColor">#FF1A1A1A</Color>
+
+            <!-- Usage heatmap — a five-step ramp, level 0 = no usage.
+
+                 Not GitHub's green. This palette spends colour only where it earns the eye
+                 (see the Status note above), and a year of squares is the largest block of
+                 colour in the app: making it green would out-shout Warning and Danger, the two
+                 things a user actually scans for, and would import a hue the system otherwise
+                 has no use for. A ramp down the neutral scale still encodes magnitude — that is
+                 what a heatmap needs — while staying inside the design system.
+
+                 Level 0 is a filled square rather than a hole: an empty *grid* has to read as a
+                 grid, not as blank page, or the map looks broken when the ledger is empty. It
+                 sits just off the panel background, deliberately close to BorderDefault.
+
+                 The four active steps walk from mid-gray to near-black, ending short of pure
+                 black so the darkest square is not confused with a border. Steps are spaced by
+                 luminance rather than evenly by value, because perceived difference bunches up
+                 at the dark end. -->
+            <Color x:Key="HeatmapLevel0Color">#FFEDEDEC</Color>
+            <Color x:Key="HeatmapLevel1Color">#FFC8C8C6</Color>
+            <Color x:Key="HeatmapLevel2Color">#FF9A9A98</Color>
+            <Color x:Key="HeatmapLevel3Color">#FF666664</Color>
+            <Color x:Key="HeatmapLevel4Color">#FF333333</Color>
+
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Dark">
+
+            <!-- Brand — light gray, monochrome. On dark ground, the primary/bright
+                 role is played by a lighter gray with near-black text on top. -->
+            <Color x:Key="BrandPrimaryColor">#FFA0A0A0</Color>
+            <Color x:Key="BrandPrimaryHoverColor">#FFBBBBBB</Color>
+            <Color x:Key="BrandPrimaryPressedColor">#FF808080</Color>
+            <Color x:Key="BrandPrimarySubtleColor">#FF2A2A2A</Color>
+            <Color x:Key="BrandAccentColor">#FF999999</Color>
+            <Color x:Key="BrandAccentHoverColor">#FFBBBBBB</Color>
+            <Color x:Key="BrandAccentPressedColor">#FFA0A0A0</Color>
+            <Color x:Key="BrandOnPrimaryColor">#FF1A1A1A</Color>
+
+            <!-- Background / Surface — neutral near-black, never pure #000. -->
+            <Color x:Key="AppBackgroundColor">#FF121212</Color>
+            <Color x:Key="SurfacePrimaryColor">#FF1B1B1B</Color>
+            <Color x:Key="SurfaceSecondaryColor">#FF212121</Color>
+            <Color x:Key="SurfaceTertiaryColor">#FF2A2A2A</Color>
+            <Color x:Key="SurfaceElevatedColor">#FF1E1E1E</Color>
+            <Color x:Key="SurfaceHoverColor">#FF272727</Color>
+            <Color x:Key="SurfacePressedColor">#FF333333</Color>
+            <Color x:Key="SurfaceSelectedColor">#FF2A2A2A</Color>
+
+            <!-- Text (see light dictionary — Secondary/Tertiary spacing). -->
+            <Color x:Key="TextPrimaryColor">#FFF5F5F4</Color>
+            <Color x:Key="TextSecondaryColor">#FFB4B4B2</Color>
+            <Color x:Key="TextTertiaryColor">#FF6E6E6B</Color>
+            <Color x:Key="TextDisabledColor">#FF5C5C5A</Color>
+            <Color x:Key="TextOnBrandColor">#FF1A1A1A</Color>
+            <Color x:Key="TextLinkColor">#FFA0A0A0</Color>
+            <Color x:Key="TextLinkHoverColor">#FFBBBBBB</Color>
+
+            <!-- Border -->
+            <Color x:Key="BorderSubtleColor">#FF262626</Color>
+            <Color x:Key="BorderDefaultColor">#FF333333</Color>
+            <Color x:Key="BorderStrongColor">#FF4D4D4D</Color>
+            <Color x:Key="DividerColor">#FF2B2B2B</Color>
+            <Color x:Key="FocusBorderColor">#FF999999</Color>
+
+            <!-- Status. Success green, Danger red and Warning amber (see the light dictionary
+                 for why warning earns a hue); Info stays on the neutral gray scale. All three
+                 are lifted well off their light-theme values — #FFB3261E is nearly unreadable
+                 on near-black, so Danger moves to a desaturated salmon that clears 5.9:1
+                 there, and Warning takes the same treatment at 6.8:1. -->
+            <Color x:Key="SuccessColor">#FF3DBE7A</Color>
+            <!-- Alias of AttentionColor; see the light-theme note. -->
+            <Color x:Key="WarningColor">#FFE0A44A</Color>
+            <Color x:Key="DangerColor">#FFEF7A70</Color>
+            <Color x:Key="InfoColor">#FFA8A8A6</Color>
+
+            <!-- In-flight status (see the light dictionary). Close to Warning's value here
+                 but deliberately its own token so the two can diverge. -->
+            <Color x:Key="StatusRunningColor">#FF888888</Color>
+
+            <!-- Attention (see the light dictionary). Lifted to a warm sand — the light
+                 theme's #FFB26A00 is a mud on near-black. 8.4:1 there. -->
+            <Color x:Key="AttentionColor">#FFE0A44A</Color>
+
+            <!-- Tinted washes (see the light dictionary). On a dark ground a wash is a
+                 *lift*, not a tint, so these are the hue mixed into a near-black rather
+                 than into white — the same 5-6% deviation from the surface, inverted. -->
+            <Color x:Key="AttentionSubtleColor">#FF2C2517</Color>
+            <Color x:Key="SuccessSubtleColor">#FF17281F</Color>
+            <Color x:Key="DangerSubtleColor">#FF2B1B19</Color>
+
+            <!-- Search (see the light dictionary). Yellow stays bright and current stays
+                 an ochre red — both legible on near-black — with dark text on the yellow
+                 and light text on the red. -->
+            <Color x:Key="SearchMatchBackgroundColor">#FFE6BE3D</Color>
+            <Color x:Key="SearchCurrentBackgroundColor">#FFBB4A3C</Color>
+            <Color x:Key="SearchMatchTextColor">#FF1A1A1A</Color>
+            <Color x:Key="SearchCurrentTextColor">#FFF5F5F4</Color>
+
+            <!-- Chat (see the light dictionary on why agent == chat ground) -->
+            <Color x:Key="ChatBackgroundColor">#FF121212</Color>
+            <Color x:Key="UserMessageBackgroundColor">#FF2E2E2E</Color>
+            <Color x:Key="AgentMessageBackgroundColor">#FF121212</Color>
+            <Color x:Key="SystemMessageBackgroundColor">#FF1C1C1C</Color>
+            <Color x:Key="ChatInputBackgroundColor">#FF1C1C1C</Color>
+            <Color x:Key="CodeBackgroundColor">#FF0C0C0C</Color>
+            <Color x:Key="InlineCodeBackgroundColor">#FF2A2A2A</Color>
+            <Color x:Key="CodeTextColor">#FFBBBBBB</Color>
+
+            <!-- Syntax accents (see the light dictionary for the rationale). Lightened and
+                 desaturated relative to their light counterparts: the same hues at full strength
+                 vibrate against a near-black ground. -->
+            <Color x:Key="SyntaxKeyColor">#FFB9A0F0</Color>
+            <Color x:Key="SyntaxStringColor">#FF7FC9A0</Color>
+            <Color x:Key="SyntaxNumberColor">#FFE0A272</Color>
+            <Color x:Key="SyntaxKeywordColor">#FFE29CC4</Color>
+            <Color x:Key="SyntaxPunctuationColor">#FF6E6E6D</Color>
+            <!-- Console transcripts (see the light dictionary). The command inverts to the
+                 brightest value here, since "strongest" on a dark ground means lighter. -->
+            <Color x:Key="SyntaxCommandColor">#FFF0F0EF</Color>
+            <Color x:Key="SyntaxLabelColor">#FF8A8A89</Color>
+            <Color x:Key="SyntaxFailureColor">#FFE8837A</Color>
+
+            <!-- Composer (see the light dictionary) -->
+            <Color x:Key="ComposerStatusIdleColor">#FFA7B0C0</Color>
+            <Color x:Key="ComposerStatusConnectingColor">#FF78B3FF</Color>
+            <Color x:Key="ComposerStatusConnectedColor">#FF5DD39E</Color>
+            <Color x:Key="ComposerStatusRunningColor">#FFC4A7FF</Color>
+            <Color x:Key="ComposerStatusWaitingColor">#FFF0C45A</Color>
+            <Color x:Key="ComposerStatusReconnectingColor">#FFFFA45C</Color>
+            <Color x:Key="ComposerStatusOfflineColor">#FFFF8A80</Color>
+            <Color x:Key="ComposerStopButtonBackgroundColor">#FF4A4A4A</Color>
+            <Color x:Key="ComposerStopButtonForegroundColor">#FFF5F5F4</Color>
+            <Color x:Key="ComposerDisabledButtonBackgroundColor">#FF2A2A2A</Color>
+            <Color x:Key="ComposerDisabledButtonForegroundColor">#FF666664</Color>
+
+            <!-- Sidebar -->
+            <Color x:Key="SidebarBackgroundColor">#FF151515</Color>
+            <Color x:Key="SidebarItemHoverColor">#FF202020</Color>
+            <Color x:Key="SidebarItemPressedColor">#FF292929</Color>
+            <Color x:Key="SidebarItemSelectedColor">#FF2A2A2A</Color>
+            <Color x:Key="SidebarSelectedAccentColor">#FFA0A0A0</Color>
+
+            <!-- Settings modal -->
+            <Color x:Key="SettingsBackdropColor">#A60A0A0A</Color>
+            <Color x:Key="SettingsNavigationColor">#FF0D0D0D</Color>
+            <Color x:Key="SettingsContentColor">#FF121212</Color>
+            <Color x:Key="SettingsModalBorderColor">#FF333333</Color>
+
+            <!-- Agent avatar (see the light dictionary): inverted here — paper on ink — plus a
+                 faint border so a near-white tile still has an edge against light surfaces. -->
+            <Color x:Key="AvatarBackgroundColor">#FFF0F0EE</Color>
+            <Color x:Key="AvatarForegroundColor">#FF1A1A1A</Color>
+            <Color x:Key="AvatarBorderColor">#FF4D4D4D</Color>
+
+            <!-- Usage heatmap (see the light dictionary for why this is not green).
+
+                 The ramp inverts: on dark ground intensity reads as *lighter*, so level 4 is
+                 near-white. Level 0 sits just above the panel background — barely visible, but
+                 enough that the empty grid still reads as a grid. Stopping level 4 short of pure
+                 white keeps the brightest square from glaring in a dark room, which is the
+                 condition this theme exists for. -->
+            <Color x:Key="HeatmapLevel0Color">#FF1F1F1F</Color>
+            <Color x:Key="HeatmapLevel1Color">#FF3D3D3D</Color>
+            <Color x:Key="HeatmapLevel2Color">#FF636361</Color>
+            <Color x:Key="HeatmapLevel3Color">#FF949492</Color>
+            <Color x:Key="HeatmapLevel4Color">#FFD6D6D3</Color>
+
+        </ResourceDictionary>
+
+    </ResourceDictionary.ThemeDictionaries>
+
+</ResourceDictionary>

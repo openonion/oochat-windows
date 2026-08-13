@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl x:Class="ConnectOnion.WinUIClient.Controls.UsageSettingsContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:ConnectOnion.WinUIClient.ViewModels"
+    xmlns:controls="using:ConnectOnion.WinUIClient.Controls"
+    MinWidth="0" HorizontalAlignment="Stretch"
+    SizeChanged="UsageContent_SizeChanged">
+
+    <!-- The states are chosen from this control's own measured width (see the code-behind), not
+         from AdaptiveTrigger's window width. This content sits inside the settings modal, whose
+         body is roughly 850px at its widest no matter how large the window gets — so a
+         MinWindowWidth="1000" trigger put four totals columns into a box that never had room for
+         them. -->
+    <StackPanel MinWidth="0" HorizontalAlignment="Stretch" Spacing="{StaticResource Spacing16}">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="UsageWidthStates">
+                <VisualState x:Name="CompactUsage">
+                    <VisualState.Setters>
+                        <Setter Target="RangeGrid.RowSpacing" Value="8" />
+                        <Setter Target="RangeColumn0.Width" Value="Auto" />
+                        <Setter Target="RangeColumn1.Width" Value="Auto" />
+                        <Setter Target="RangeColumn2.Width" Value="0" />
+                        <Setter Target="RangeColumn3.Width" Value="0" />
+                        <Setter Target="TodayRange.(Grid.Row)" Value="0" />
+                        <Setter Target="TodayRange.(Grid.Column)" Value="0" />
+                        <Setter Target="Week.(Grid.Row)" Value="0" />
+                        <Setter Target="Week.(Grid.Column)" Value="1" />
+                        <Setter Target="Month.(Grid.Row)" Value="1" />
+                        <Setter Target="Month.(Grid.Column)" Value="0" />
+                        <Setter Target="AllTime.(Grid.Row)" Value="1" />
+                        <Setter Target="AllTime.(Grid.Column)" Value="1" />
+                        <Setter Target="TotalsGrid.RowSpacing" Value="12" />
+                        <Setter Target="TotalColumn0.Width" Value="*" />
+                        <Setter Target="TotalColumn1.Width" Value="*" />
+                        <Setter Target="TotalColumn2.Width" Value="0" />
+                        <Setter Target="TotalColumn3.Width" Value="0" />
+                        <Setter Target="InputTotal.(Grid.Row)" Value="0" />
+                        <Setter Target="InputTotal.(Grid.Column)" Value="1" />
+                        <Setter Target="OutputTotal.(Grid.Row)" Value="1" />
+                        <Setter Target="OutputTotal.(Grid.Column)" Value="0" />
+                        <Setter Target="CallsTotal.(Grid.Row)" Value="1" />
+                        <Setter Target="CallsTotal.(Grid.Column)" Value="1" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="WideUsage">
+                    <VisualState.Setters>
+                        <Setter Target="RangeGrid.RowSpacing" Value="0" />
+                        <Setter Target="RangeColumn0.Width" Value="Auto" />
+                        <Setter Target="RangeColumn1.Width" Value="Auto" />
+                        <Setter Target="RangeColumn2.Width" Value="Auto" />
+                        <Setter Target="RangeColumn3.Width" Value="Auto" />
+                        <Setter Target="TodayRange.(Grid.Row)" Value="0" />
+                        <Setter Target="TodayRange.(Grid.Column)" Value="0" />
+                        <Setter Target="Week.(Grid.Row)" Value="0" />
+                        <Setter Target="Week.(Grid.Column)" Value="1" />
+                        <Setter Target="Month.(Grid.Row)" Value="0" />
+                        <Setter Target="Month.(Grid.Column)" Value="2" />
+                        <Setter Target="AllTime.(Grid.Row)" Value="0" />
+                        <Setter Target="AllTime.(Grid.Column)" Value="3" />
+                        <Setter Target="TotalsGrid.RowSpacing" Value="0" />
+                        <Setter Target="TotalColumn0.Width" Value="*" />
+                        <Setter Target="TotalColumn1.Width" Value="*" />
+                        <Setter Target="TotalColumn2.Width" Value="*" />
+                        <Setter Target="TotalColumn3.Width" Value="*" />
+                        <Setter Target="InputTotal.(Grid.Row)" Value="0" />
+                        <Setter Target="InputTotal.(Grid.Column)" Value="1" />
+                        <Setter Target="OutputTotal.(Grid.Row)" Value="0" />
+                        <Setter Target="OutputTotal.(Grid.Column)" Value="2" />
+                        <Setter Target="CallsTotal.(Grid.Row)" Value="0" />
+                        <Setter Target="CallsTotal.(Grid.Column)" Value="3" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+        <TextBlock x:Uid="UsageDescription" Text="Token usage recorded on this device, grouped by model. Usage is kept even after you delete a conversation — the tokens were still spent — and never leaves your machine."
+                   TextWrapping="Wrap" Foreground="{ThemeResource TextSecondaryBrush}" />
+
+        <InfoBar x:Name="UsageErrorBar"
+                 x:Uid="UsageLoadError"
+                 IsOpen="False"
+                 IsClosable="True"
+                 Severity="Error"
+                 Title="Usage unavailable"
+                 Message="ConnectOnion couldn't load usage history. Try opening this page again."
+                 AutomationProperties.LiveSetting="Assertive" />
+
+        <!-- Activity heatmap.
+             Placed ABOVE the time-window buttons on purpose: it always shows the trailing twelve
+             months regardless of the selected range, and sitting below the radio buttons would
+             imply they filter it. Visibility follows IsLoading only — not ShowContent — because
+             ShowContent is false whenever the *table's* window happens to be empty ("Today" with
+             no usage yet), and hiding a year of history for that reason would be wrong. -->
+        <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch"
+                Visibility="{x:Bind Vm.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=invert}">
+            <controls:UsageHeatmapView Heatmap="{x:Bind Vm.Heatmap, Mode=OneWay}" />
+        </Border>
+
+        <!-- Time window -->
+        <Grid x:Name="RangeGrid" ColumnSpacing="{StaticResource Spacing12}" HorizontalAlignment="Left">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="RangeColumn0" Width="Auto" />
+                <ColumnDefinition x:Name="RangeColumn1" Width="Auto" />
+                <ColumnDefinition x:Name="RangeColumn2" Width="Auto" />
+                <ColumnDefinition x:Name="RangeColumn3" Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <RadioButton x:Uid="UsageToday" x:Name="TodayRange" AutomationProperties.AutomationId="TodayRange" GroupName="UsageRange" Content="Today"
+                         Click="Range_Click" Tag="Today" />
+            <RadioButton x:Uid="UsageWeek" x:Name="Week" Grid.Column="1" AutomationProperties.AutomationId="Week" GroupName="UsageRange" Content="Last 7 days" IsChecked="True"
+                         Click="Range_Click" Tag="Last7Days" />
+            <RadioButton x:Uid="UsageMonth" x:Name="Month" Grid.Column="2" AutomationProperties.AutomationId="Month" GroupName="UsageRange" Content="Last 30 days"
+                         Click="Range_Click" Tag="Last30Days" />
+            <RadioButton x:Uid="UsageAllTime" x:Name="AllTime" Grid.Column="3" AutomationProperties.AutomationId="AllTime" GroupName="UsageRange" Content="All time"
+                         Click="Range_Click" Tag="AllTime" />
+        </Grid>
+
+        <ProgressRing IsActive="{x:Bind Vm.IsLoading, Mode=OneWay}"
+                      Visibility="{x:Bind Vm.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                      HorizontalAlignment="Center" Margin="0,18" />
+
+        <!-- Totals for the window -->
+        <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch"
+                Visibility="{x:Bind Vm.ShowContent, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+            <Grid x:Name="TotalsGrid" ColumnSpacing="{StaticResource Spacing12}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="TotalColumn0" Width="*" />
+                    <ColumnDefinition x:Name="TotalColumn1" Width="*" />
+                    <ColumnDefinition x:Name="TotalColumn2" Width="*" />
+                    <ColumnDefinition x:Name="TotalColumn3" Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="{x:Bind Vm.TotalTokensText, Mode=OneWay}" FontSize="{StaticResource ProductSectionTitleFontSize}" FontWeight="SemiBold" />
+                        <TextBlock x:Uid="UsageTotalTokens" Text="Total tokens" Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextSecondaryBrush}" />
+                </StackPanel>
+                <StackPanel x:Name="InputTotal" Grid.Column="1" Spacing="2">
+                    <TextBlock Text="{x:Bind Vm.TotalInputTokensText, Mode=OneWay}" FontSize="{StaticResource ProductSectionTitleFontSize}" FontWeight="SemiBold" />
+                        <TextBlock x:Uid="UsageInput" Text="Input" Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextSecondaryBrush}" />
+                </StackPanel>
+                <StackPanel x:Name="OutputTotal" Grid.Column="2" Spacing="2">
+                    <TextBlock Text="{x:Bind Vm.TotalOutputTokensText, Mode=OneWay}" FontSize="{StaticResource ProductSectionTitleFontSize}" FontWeight="SemiBold" />
+                        <TextBlock x:Uid="UsageOutput" Text="Output" Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextSecondaryBrush}" />
+                </StackPanel>
+                <StackPanel x:Name="CallsTotal" Grid.Column="3" Spacing="2">
+                    <TextBlock Text="{x:Bind Vm.TotalCallsText, Mode=OneWay}" FontSize="{StaticResource ProductSectionTitleFontSize}" FontWeight="SemiBold" />
+                        <TextBlock x:Uid="UsageLlmCalls" Text="LLM calls" Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextSecondaryBrush}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Per-model breakdown -->
+        <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch"
+                Visibility="{x:Bind Vm.ShowContent, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+            <StackPanel Spacing="{StaticResource Spacing16}">
+                <TextBlock x:Uid="UsageByModel" Text="By model" Style="{StaticResource BodyStrongTextBlockStyle}" />
+
+                <ItemsControl ItemsSource="{x:Bind Vm.Rows, Mode=OneWay}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:UsageRowViewModel">
+                            <StackPanel Spacing="{StaticResource Spacing4}" Margin="0,0,0,16"
+                                        AutomationProperties.Name="{x:Bind AccessibilityName}">
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind Model}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductBodyFontSize}"
+                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind TotalTokensText}"
+                                               FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </Grid>
+
+                                <!-- Share bar, relative to the biggest model in this window. A
+                                     ProgressBar rather than a hand-sized Border: it already stretches
+                                     to its container, so the bar stays correct when the settings
+                                     modal is resized, with no width converter to maintain. -->
+                                <ProgressBar Value="{x:Bind SharePercent}" Maximum="100"
+                                             Height="6" HorizontalAlignment="Stretch"
+                                             Foreground="{ThemeResource BrandPrimaryBrush}"
+                                             AutomationProperties.AccessibilityView="Raw" />
+
+                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource Spacing16}">
+                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextSecondaryBrush}">
+                                        <Run Text="{x:Bind CallsText}" /><Run x:Uid="UsageCallsSuffix" Text=" calls" />
+                                    </TextBlock>
+                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextSecondaryBrush}">
+                                        <Run Text="{x:Bind InputTokensText}" /><Run x:Uid="UsageInputSuffix" Text=" in" />
+                                    </TextBlock>
+                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextSecondaryBrush}">
+                                        <Run Text="{x:Bind OutputTokensText}" /><Run x:Uid="UsageOutputSuffix" Text=" out" />
+                                    </TextBlock>
+                                    <TextBlock Text="{x:Bind CacheText}"
+                                               Style="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextTertiaryBrush}"
+                                               Visibility="{x:Bind HasCacheHits, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <!-- Empty state -->
+        <StackPanel Spacing="6" Margin="0,36" HorizontalAlignment="Center"
+                    Visibility="{x:Bind Vm.ShowEmptyState, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <TextBlock x:Uid="UsageEmpty" Text="No usage recorded yet" HorizontalAlignment="Center"
+                       Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock x:Uid="UsageEmptyHint" Text="Token usage appears here after an agent replies."
+                       HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                       Foreground="{ThemeResource TextSecondaryBrush}" />
+        </StackPanel>
+
+        <!-- Footer: provenance + the one and only path that deletes usage -->
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{x:Bind Vm.FirstRecordedText, Mode=OneWay}"
+                       VerticalAlignment="Center" TextWrapping="Wrap"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextTertiaryBrush}"
+                       Visibility="{x:Bind Vm.HasFirstRecorded, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+            <Button x:Uid="UsageClear" x:Name="ClearButton" AutomationProperties.AutomationId="ClearButton" Grid.Column="1" Content="Clear usage history"
+                    Click="Clear_Click"
+                    AutomationProperties.Name="Clear all recorded token usage"
+                    Visibility="{x:Bind Vm.ShowContent, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+        </Grid>
+    </StackPanel>
+</UserControl>

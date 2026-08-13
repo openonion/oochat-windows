@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="ConnectOnion.WinUIClient.Controls.ThinkingIndicator"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Width="18"
+    Height="18"
+    IsTabStop="False"
+    AutomationProperties.AccessibilityView="Raw">
+
+    <!-- Fixed 18x18 and AccessibilityView="Raw": the size is fixed so starting and stopping the
+         animation never re-measures the row and shifts the "Thinking..." text sideways, and the
+         icon is raw because it is decoration — the state is already spoken by that text, and a
+         screen reader announcing a spinner as well would say the same thing twice.
+
+         Ordinary XAML shapes, deliberately NOT a Win2D CanvasAnimatedControl. This control is
+         realized inside a virtualized ListView item template, so one instance exists per running
+         activity row rather than per page — and each CanvasAnimatedControl brings its own D3D
+         device, swap chain and render thread, none of which Win2D releases unless
+         RemoveFromVisualTree() is called (which a recycled row cannot do and then re-attach).
+         Measured before the rewrite: ~55 leaked threads and ~23 MB per chat turn, so a 40-turn
+         text-only conversation grew the process from 133 MB to 984 MB. Same reasoning as the
+         composer's waveform, which is XAML shapes for the same reason. Keep it that way.
+
+         Everything animated here is RenderTransform or Opacity, so the animations are independent
+         (composition-thread) and never run a layout pass — which is also why the ray length is a
+         ScaleTransform about the ray's inner end rather than an animated Height. -->
+    <Grid>
+        <Grid.Resources>
+            <!-- Started/stopped from code rather than an EventTrigger: the loop must only run
+                 while IsActive is true AND the control is loaded (see the lifetime notes in
+                 ThinkingIndicator.xaml.cs), and Microsoft.UI.Xaml.EventTrigger cannot express
+                 that — it has no RoutedEvent property and always fires on Loaded. -->
+            <Storyboard x:Key="SpinnerStoryboard" RepeatBehavior="Forever">
+                <!-- Ring rotation. 2.7s, and deliberately not a multiple of the pulse or the
+                     breathing period below, so the three never realign and the short loop does
+                     not read as a loop. -->
+                <DoubleAnimation Storyboard.TargetName="RingSpin"
+                                 Storyboard.TargetProperty="Angle"
+                                 From="0" To="360"
+                                 Duration="0:0:2.7"
+                                 RepeatBehavior="Forever" />
+
+                <!-- Breathing: the whole ring drifts +/-4% over 2.2s (1.1s each way). -->
+                <DoubleAnimation Storyboard.TargetName="RingBreath"
+                                 Storyboard.TargetProperty="ScaleX"
+                                 From="0.96" To="1.04"
+                                 Duration="0:0:1.1"
+                                 AutoReverse="True"
+                                 RepeatBehavior="Forever" />
+                <DoubleAnimation Storyboard.TargetName="RingBreath"
+                                 Storyboard.TargetProperty="ScaleY"
+                                 From="0.96" To="1.04"
+                                 Duration="0:0:1.1"
+                                 AutoReverse="True"
+                                 RepeatBehavior="Forever" />
+
+                <!-- Per-ray pulse: length and opacity move together over 1.3s (0.65s each way),
+                     each ray lagging the previous one by 1/16 of a cycle (0.08125s). That walks
+                     the bright spot around the ring twice per pulse, so neighbouring rays never
+                     move in lockstep and the mark never dims all at once. The stagger is a
+                     BeginTime because a negative phase is not expressible; the only difference is
+                     the first cycle easing in, which reads as the mark starting up. -->
+                <DoubleAnimation Storyboard.TargetName="Ray0Scale" Storyboard.TargetProperty="ScaleY"
+                                 From="0.75" To="1.15" Duration="0:0:0.65"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+                <DoubleAnimation Storyboard.TargetName="Ray0" Storyboard.TargetProperty="Opacity"
+                                 From="0.35" To="1.0" Duration="0:0:0.65"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+
+                <DoubleAnimation Storyboard.TargetName="Ray1Scale" Storyboard.TargetProperty="ScaleY"
+                                 From="0.75" To="1.15" Duration="0:0:0.65" BeginTime="0:0:0.08125"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+                <DoubleAnimation Storyboard.TargetName="Ray1" Storyboard.TargetProperty="Opacity"
+                                 From="0.35" To="1.0" Duration="0:0:0.65" BeginTime="0:0:0.08125"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+
+                <DoubleAnimation Storyboard.TargetName="Ray2Scale" Storyboard.TargetProperty="ScaleY"
+                                 From="0.75" To="1.15" Duration="0:0:0.65" BeginTime="0:0:0.1625"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+                <DoubleAnimation Storyboard.TargetName="Ray2" Storyboard.TargetProperty="Opacity"
+                                 From="0.35" To="1.0" Duration="0:0:0.65" BeginTime="0:0:0.1625"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+
+                <DoubleAnimation Storyboard.TargetName="Ray3Scale" Storyboard.TargetProperty="ScaleY"
+                                 From="0.75" To="1.15" Duration="0:0:0.65" BeginTime="0:0:0.24375"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+                <DoubleAnimation Storyboard.TargetName="Ray3" Storyboard.TargetProperty="Opacity"
+                                 From="0.35" To="1.0" Duration="0:0:0.65" BeginTime="0:0:0.24375"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+
+                <DoubleAnimation Storyboard.TargetName="Ray4Scale" Storyboard.TargetProperty="ScaleY"
+                                 From="0.75" To="1.15" Duration="0:0:0.65" BeginTime="0:0:0.325"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+                <DoubleAnimation Storyboard.TargetName="Ray4" Storyboard.TargetProperty="Opacity"
+                                 From="0.35" To="1.0" Duration="0:0:0.65" BeginTime="0:0:0.325"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+
+                <DoubleAnimation Storyboard.TargetName="Ray5Scale" Storyboard.TargetProperty="ScaleY"
+                                 From="0.75" To="1.15" Duration="0:0:0.65" BeginTime="0:0:0.40625"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+                <DoubleAnimation Storyboard.TargetName="Ray5" Storyboard.TargetProperty="Opacity"
+                                 From="0.35" To="1.0" Duration="0:0:0.65" BeginTime="0:0:0.40625"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+
+                <DoubleAnimation Storyboard.TargetName="Ray6Scale" Storyboard.TargetProperty="ScaleY"
+                                 From="0.75" To="1.15" Duration="0:0:0.65" BeginTime="0:0:0.4875"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+                <DoubleAnimation Storyboard.TargetName="Ray6" Storyboard.TargetProperty="Opacity"
+                                 From="0.35" To="1.0" Duration="0:0:0.65" BeginTime="0:0:0.4875"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+
+                <DoubleAnimation Storyboard.TargetName="Ray7Scale" Storyboard.TargetProperty="ScaleY"
+                                 From="0.75" To="1.15" Duration="0:0:0.65" BeginTime="0:0:0.56875"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+                <DoubleAnimation Storyboard.TargetName="Ray7" Storyboard.TargetProperty="Opacity"
+                                 From="0.35" To="1.0" Duration="0:0:0.65" BeginTime="0:0:0.56875"
+                                 AutoReverse="True" RepeatBehavior="Forever" />
+            </Storyboard>
+        </Grid.Resources>
+
+        <!-- The ring: rotation and breathing act on all eight rays together. -->
+        <Grid RenderTransformOrigin="0.5,0.5">
+            <Grid.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform x:Name="RingBreath" ScaleX="1" ScaleY="1" />
+                    <RotateTransform x:Name="RingSpin" Angle="0" />
+                </TransformGroup>
+            </Grid.RenderTransform>
+
+            <!-- One ray per 45 degrees. Each sits in its own full-size cell rotated about the
+                 ring's centre, so the ray itself only has to be placed straight up: bottom edge
+                 2.4epx above centre (Margin bottom 11.4 = 9 + 2.4) and 4epx long. ScaleY about
+                 (0.5,1) — the inner end — therefore lengthens it outward without moving the
+                 inner radius or triggering layout. -->
+            <Grid RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform><RotateTransform Angle="0" /></Grid.RenderTransform>
+                <Rectangle x:Name="Ray0" Fill="{ThemeResource TextTertiaryBrush}"
+                           Width="1.8" Height="4" RadiusX="0.9" RadiusY="0.9" Opacity="0.35"
+                           HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                           Margin="0,0,0,11.4" RenderTransformOrigin="0.5,1">
+                    <Rectangle.RenderTransform><ScaleTransform x:Name="Ray0Scale" ScaleY="1" /></Rectangle.RenderTransform>
+                </Rectangle>
+            </Grid>
+
+            <Grid RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform><RotateTransform Angle="45" /></Grid.RenderTransform>
+                <Rectangle x:Name="Ray1" Fill="{ThemeResource TextTertiaryBrush}"
+                           Width="1.8" Height="4" RadiusX="0.9" RadiusY="0.9" Opacity="0.35"
+                           HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                           Margin="0,0,0,11.4" RenderTransformOrigin="0.5,1">
+                    <Rectangle.RenderTransform><ScaleTransform x:Name="Ray1Scale" ScaleY="1" /></Rectangle.RenderTransform>
+                </Rectangle>
+            </Grid>
+
+            <Grid RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform><RotateTransform Angle="90" /></Grid.RenderTransform>
+                <Rectangle x:Name="Ray2" Fill="{ThemeResource TextTertiaryBrush}"
+                           Width="1.8" Height="4" RadiusX="0.9" RadiusY="0.9" Opacity="0.35"
+                           HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                           Margin="0,0,0,11.4" RenderTransformOrigin="0.5,1">
+                    <Rectangle.RenderTransform><ScaleTransform x:Name="Ray2Scale" ScaleY="1" /></Rectangle.RenderTransform>
+                </Rectangle>
+            </Grid>
+
+            <Grid RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform><RotateTransform Angle="135" /></Grid.RenderTransform>
+                <Rectangle x:Name="Ray3" Fill="{ThemeResource TextTertiaryBrush}"
+                           Width="1.8" Height="4" RadiusX="0.9" RadiusY="0.9" Opacity="0.35"
+                           HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                           Margin="0,0,0,11.4" RenderTransformOrigin="0.5,1">
+                    <Rectangle.RenderTransform><ScaleTransform x:Name="Ray3Scale" ScaleY="1" /></Rectangle.RenderTransform>
+                </Rectangle>
+            </Grid>
+
+            <Grid RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform><RotateTransform Angle="180" /></Grid.RenderTransform>
+                <Rectangle x:Name="Ray4" Fill="{ThemeResource TextTertiaryBrush}"
+                           Width="1.8" Height="4" RadiusX="0.9" RadiusY="0.9" Opacity="0.35"
+                           HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                           Margin="0,0,0,11.4" RenderTransformOrigin="0.5,1">
+                    <Rectangle.RenderTransform><ScaleTransform x:Name="Ray4Scale" ScaleY="1" /></Rectangle.RenderTransform>
+                </Rectangle>
+            </Grid>
+
+            <Grid RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform><RotateTransform Angle="225" /></Grid.RenderTransform>
+                <Rectangle x:Name="Ray5" Fill="{ThemeResource TextTertiaryBrush}"
+                           Width="1.8" Height="4" RadiusX="0.9" RadiusY="0.9" Opacity="0.35"
+                           HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                           Margin="0,0,0,11.4" RenderTransformOrigin="0.5,1">
+                    <Rectangle.RenderTransform><ScaleTransform x:Name="Ray5Scale" ScaleY="1" /></Rectangle.RenderTransform>
+                </Rectangle>
+            </Grid>
+
+            <Grid RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform><RotateTransform Angle="270" /></Grid.RenderTransform>
+                <Rectangle x:Name="Ray6" Fill="{ThemeResource TextTertiaryBrush}"
+                           Width="1.8" Height="4" RadiusX="0.9" RadiusY="0.9" Opacity="0.35"
+                           HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                           Margin="0,0,0,11.4" RenderTransformOrigin="0.5,1">
+                    <Rectangle.RenderTransform><ScaleTransform x:Name="Ray6Scale" ScaleY="1" /></Rectangle.RenderTransform>
+                </Rectangle>
+            </Grid>
+
+            <Grid RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform><RotateTransform Angle="315" /></Grid.RenderTransform>
+                <Rectangle x:Name="Ray7" Fill="{ThemeResource TextTertiaryBrush}"
+                           Width="1.8" Height="4" RadiusX="0.9" RadiusY="0.9" Opacity="0.35"
+                           HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                           Margin="0,0,0,11.4" RenderTransformOrigin="0.5,1">
+                    <Rectangle.RenderTransform><ScaleTransform x:Name="Ray7Scale" ScaleY="1" /></Rectangle.RenderTransform>
+                </Rectangle>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ConnectOnion.WinUIClient (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "ConnectOnion.WinUIClient (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

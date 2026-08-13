@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="ConnectOnion.WinUIClient.Controls.AgentShareDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Uid="AgentShareDialog"
+    Title="Share agent"
+    PrimaryButtonText="Open web chat"
+    CloseButtonText="Close"
+    DefaultButton="Primary"
+    PrimaryButtonClick="OpenWebChat_Click">
+    <StackPanel Width="360" MaxWidth="420" Spacing="14">
+        <TextBlock x:Uid="AgentShareDescription" Text="Scan the QR code or share the web link to open this relay agent in ConnectOnion Chat."
+                   TextWrapping="Wrap"
+                   Foreground="{ThemeResource TextSecondaryBrush}" />
+        <Border Width="232"
+                Height="232"
+                Padding="12"
+                HorizontalAlignment="Center"
+                CornerRadius="12"
+                Background="White"
+                BorderBrush="{ThemeResource BorderDefaultBrush}"
+                BorderThickness="1">
+            <Grid>
+                <Image x:Uid="AgentShareQrCode" x:Name="QrImage"
+                       Width="208"
+                       Height="208"
+                       Stretch="Uniform"
+                       AutomationProperties.Name="QR code for the agent web chat" />
+                <ProgressRing x:Uid="AgentShareQrProgress" x:Name="QrProgress"
+                              Width="24"
+                              Height="24"
+                              IsActive="True"
+                              AutomationProperties.Name="Generating QR code" />
+                <TextBlock x:Name="QrErrorText"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           VerticalAlignment="Center"
+                           Foreground="{ThemeResource DangerBrush}"
+                           Visibility="Collapsed"
+                           AutomationProperties.LiveSetting="Assertive" />
+            </Grid>
+        </Border>
+        <StackPanel Spacing="4">
+                <TextBlock x:Uid="AgentShareWebChat" Text="Web chat" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBlock x:Name="WebUrlText"
+                       TextWrapping="Wrap"
+                       IsTextSelectionEnabled="True"
+                       FontFamily="{StaticResource JetBrainsMonoFontFamily}" />
+        </StackPanel>
+        <StackPanel Spacing="4">
+                <TextBlock x:Uid="AgentShareAddress" Text="Agent address" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBlock x:Name="AddressText"
+                       TextWrapping="Wrap"
+                       IsTextSelectionEnabled="True"
+                       FontFamily="{StaticResource JetBrainsMonoFontFamily}" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+        <Button x:Uid="AgentShareCopyAddress" Content="Copy address"
+                    Tag="address"
+                    Click="Copy_Click"
+                    AutomationProperties.Name="Copy agent address" />
+        <Button x:Uid="AgentShareCopyLink" Content="Copy link"
+                    Tag="url"
+                    Click="Copy_Click"
+                    AutomationProperties.Name="Copy agent web chat link" />
+        </StackPanel>
+    </StackPanel>
+</ContentDialog>

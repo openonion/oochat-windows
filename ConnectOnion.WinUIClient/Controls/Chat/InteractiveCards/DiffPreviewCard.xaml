@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl x:Class="ConnectOnion.WinUIClient.Controls.DiffPreviewCard" x:Name="Root"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ConnectOnion.WinUIClient.Controls"
+    xmlns:common="using:ConnectOnion.WinUIClient.Common"
+    xmlns:ic="using:FluentIcons.WinUI"
+    xmlns:models="using:ConnectOnion.WinUIClient.Models">
+    <UserControl.Resources>
+        <common:InteractiveTextConverter x:Key="InteractiveText" />
+    </UserControl.Resources>
+    <!-- This card already owns a disclosure — the "View changes"/"Hide changes" footer action
+         over Message.IsDiffExpanded, which is what ShowBody below is bound to. Disable the
+         generic header disclosure so there is no second chevron or independent folded state. -->
+    <local:InteractiveCard Message="{x:Bind Message, Mode=OneWay}"
+        IconGlyph="{x:Bind Message.DiffIconGlyph, Mode=OneWay}"
+        Title="{x:Bind Message.DiffCardTitle, Mode=OneWay, Converter={StaticResource InteractiveText}}"
+        Subtitle="{x:Bind Message.DiffCardSubtitle, Mode=OneWay}"
+        HeaderMeta="{x:Bind Message.DiffHeaderMeta, Mode=OneWay}"
+        ShowStatusBadge="False"
+        ShowBody="{x:Bind Message.ShowDiffBody, Mode=OneWay}"
+        AllowHeaderDisclosure="False"
+        IsCompact="False"
+        ChromeTone="{x:Bind Message.DiffChromeTone, Mode=OneWay}"
+        IconTone="{x:Bind Message.DiffIconTone, Mode=OneWay}"
+        AccessibilityName="{x:Bind Message.DiffAccessibilityName, Mode=OneWay}">
+        <local:InteractiveCard.CardBody>
+            <StackPanel>
+                <Border Margin="16,10,16,0" Padding="10,8" CornerRadius="6"
+                    Background="{ThemeResource SurfaceSecondaryBrush}"
+                    Visibility="{x:Bind Message.ShowDiffProblem, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <ic:FluentIcon Icon="Warning"
+                                       IconVariant="Regular"
+                                       IconSize="Size16"
+                                       Foreground="{ThemeResource WarningBrush}"
+                                       AutomationProperties.AccessibilityView="Raw" />
+                        <TextBlock Grid.Column="1" Text="{x:Bind Message.DiffProblemText, Mode=OneWay}"
+                            Style="{StaticResource InteractiveHelperTextStyle}"
+                            FontSize="{x:Bind Message.CardCaptionFontSize, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                    </Grid>
+                </Border>
+                <TextBlock Text="{x:Bind Message.DiffContextPath, Mode=OneWay}"
+                    FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                    FontSize="{x:Bind Message.CardCodeFontSize, Mode=OneWay}"
+                    Margin="16,8,16,7" TextTrimming="CharacterEllipsis"
+                    ToolTipService.ToolTip="{x:Bind Message.EventTitle, Mode=OneWay}"
+                    AutomationProperties.Name="{x:Bind Message.EventTitle, Mode=OneWay}"
+                    Foreground="{ThemeResource TextTertiaryBrush}" />
+                <ScrollViewer x:Name="DiffScrollViewer"
+                    MaxHeight="{x:Bind Message.DiffViewportHeight, Mode=OneWay}"
+                    HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled"
+                    VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled"
+                    IsVerticalScrollChainingEnabled="True"
+                    IsHorizontalScrollChainingEnabled="True"
+                    IsTabStop="False">
+                    <ItemsRepeater ItemsSource="{x:Bind Message.DiffPreview.Files, Mode=OneWay}">
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="models:DiffFileModel">
+                                <StackPanel>
+                                    <Button Tag="{x:Bind}" Click="FileHeader_Click"
+                                        Style="{StaticResource InteractiveCardTertiaryButtonStyle}"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                        AutomationProperties.Name="{x:Bind FullPath}"
+                                        Visibility="{x:Bind ShowHeader, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <Grid>
+                                                <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons" FontSize="{StaticResource ProductMicroFontSize}"
+                                                    Visibility="{x:Bind IsExpanded, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                                                <TextBlock Text="&#xE76C;" FontFamily="Segoe Fluent Icons" FontSize="{StaticResource ProductMicroFontSize}"
+                                                    Visibility="{x:Bind IsExpanded, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+                                            </Grid>
+                                            <TextBlock Grid.Column="1" Text="{x:Bind DisplayPath}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCaptionFontSize}"
+                                                TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind FullPath}" />
+                                            <TextBlock Grid.Column="2" Text="{x:Bind ChangeSummary}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCaptionFontSize}"
+                                                Foreground="{ThemeResource TextTertiaryBrush}" />
+                                        </Grid>
+                                    </Button>
+                                    <ItemsRepeater ItemsSource="{x:Bind Lines}"
+                                        Visibility="{x:Bind IsExpanded, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                                        <ItemsRepeater.ItemTemplate>
+                                            <DataTemplate x:DataType="models:DiffLineModel">
+                                                <Border Background="{x:Bind Kind, Converter={StaticResource DiffKindToBrush}}"
+                                                    AutomationProperties.Name="{x:Bind AccessibilityName}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="50" /><ColumnDefinition Width="22" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                        <TextBlock Text="{x:Bind DisplayLineNumber}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCaptionFontSize}" Padding="8,2" TextAlignment="Right" Foreground="{ThemeResource TextTertiaryBrush}" />
+                                                        <TextBlock Grid.Column="1" Text="{x:Bind Marker}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCaptionFontSize}" Padding="6,2" TextAlignment="Center" />
+                                                        <Grid Grid.Column="2" MinWidth="0">
+                                                            <TextBlock Text="{x:Bind Content}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCaptionFontSize}" Padding="4,2,14,2" TextWrapping="NoWrap" IsTextSelectionEnabled="True"
+                                                                Visibility="{x:Bind IsWrapped, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+                                                            <TextBlock Text="{x:Bind Content}" MinWidth="0" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCaptionFontSize}" Padding="4,2,14,2" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                                                                Visibility="{x:Bind IsWrapped, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                                                        </Grid>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsRepeater.ItemTemplate>
+                                    </ItemsRepeater>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
+                </ScrollViewer>
+                <TextBlock Margin="16,7,16,0"
+                           Text="{x:Bind Message.DiffPreview.TruncationLabel, Mode=OneWay}"
+                           Style="{StaticResource InteractiveHelperTextStyle}"
+                           FontSize="{x:Bind Message.CardCaptionFontSize, Mode=OneWay}"
+                           AutomationProperties.LiveSetting="Polite"
+                           Visibility="{x:Bind Message.DiffPreview.IsPreviewTruncated, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                <!-- Native command surface: secondary diff actions automatically move into
+                     overflow when the window is narrow instead of compressing five columns. -->
+                <CommandBar Padding="8,2"
+                            Background="Transparent"
+                            IsDynamicOverflowEnabled="True"
+                            DefaultLabelPosition="Right">
+                    <CommandBar.Content>
+                <TextBlock x:Uid="DiffUnifiedUtf8" Text="Unified diff · UTF-8"
+                                    Style="{StaticResource InteractiveHelperTextStyle}"
+                                    FontSize="{x:Bind Message.CardCaptionFontSize, Mode=OneWay}"
+                                   VerticalAlignment="Center" />
+                    </CommandBar.Content>
+                    <AppBarButton Label="{x:Bind Message.DiffWrapLabel, Mode=OneWay, Converter={StaticResource InteractiveText}}"
+                                  Click="ToggleWrap_Click"
+                                  Visibility="{x:Bind Message.CanWrapDiff, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                    <AppBarButton x:Uid="DiffCopyUnified" Label="Copy diff"
+                                  Click="CopyDiff_Click"
+                                  ToolTipService.ToolTip="Copy unified diff without visual line numbers"
+                                  AutomationProperties.Name="Copy diff without visual line numbers" />
+                    <AppBarButton x:Uid="DiffCopyPath" Label="Copy path"
+                                  Click="CopyPath_Click"
+                                  ToolTipService.ToolTip="Copy full file path"
+                                  AutomationProperties.Name="Copy full file path" />
+                    <AppBarButton x:Name="OpenFileButton" AutomationProperties.AutomationId="OpenFileButton"
+                                  Label="Open"
+                                  Visibility="Collapsed"
+                                  Click="OpenFile_Click" />
+                </CommandBar>
+            </StackPanel>
+        </local:InteractiveCard.CardBody>
+        <local:InteractiveCard.CardFooter>
+            <Button HorizontalAlignment="Right" Margin="8,5" Padding="10,5"
+                Content="{x:Bind Message.DiffToggleLabel, Mode=OneWay, Converter={StaticResource InteractiveText}}"
+                Style="{StaticResource InteractiveCardTertiaryButtonStyle}" Click="ToggleExpanded_Click"
+                Visibility="{x:Bind Message.CanToggleDiffVisibility, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                AutomationProperties.Name="{x:Bind Message.DiffToggleLabel, Mode=OneWay}" />
+        </local:InteractiveCard.CardFooter>
+    </local:InteractiveCard>
+</UserControl>

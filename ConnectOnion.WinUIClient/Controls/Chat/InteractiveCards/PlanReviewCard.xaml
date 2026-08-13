@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl x:Class="ConnectOnion.WinUIClient.Controls.PlanReviewCard" x:Name="Root"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ConnectOnion.WinUIClient.Controls"
+    xmlns:models="using:ConnectOnion.WinUIClient.Models">
+    <Grid>
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="WidthStates">
+                <VisualState x:Name="Narrow">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="PlanUtilityActions.Orientation" Value="Vertical" />
+                        <Setter Target="PlanUtilityActions.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="ReviewSectionsButton.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="CopyPlanButton.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="FeedbackActions.Orientation" Value="Vertical" />
+                        <Setter Target="FeedbackActions.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="RejectConfirmActions.Orientation" Value="Vertical" />
+                        <Setter Target="RejectConfirmActions.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="PlanActionButtons.Orientation" Value="Vertical" />
+                        <Setter Target="PlanActionButtons.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="PlanRejectButton.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="PlanChangesButton.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="PlanApproveButton.HorizontalAlignment" Value="Stretch" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Wide">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="1000" />
+                    </VisualState.StateTriggers>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+        <local:InteractiveCard x:Uid="PlanReviewCard" Message="{x:Bind Message, Mode=OneWay}"
+        IsExpanded="{x:Bind Message.IsInteractiveCardExpanded, Mode=TwoWay}"
+        IconGlyph="{x:Bind Message.PlanIconGlyph, Mode=OneWay}"
+        Title="Review execution plan"
+        Subtitle="{x:Bind Message.PlanReviewSubtitle, Mode=OneWay}"
+        StatusLabel="{x:Bind Message.InteractiveStateLabel, Mode=OneWay}"
+        ChromeTone="{x:Bind Message.PlanChromeTone, Mode=OneWay}"
+        IconTone="{x:Bind Message.PlanIconTone, Mode=OneWay}"
+        AccessibilityName="{x:Bind Message.InteractiveAccessibilityName, Mode=OneWay}">
+        <local:InteractiveCard.CardBody>
+            <StackPanel Padding="16,14" Spacing="12">
+                <StackPanel Spacing="6">
+                    <Border Padding="7,3" CornerRadius="4" Background="{ThemeResource SurfaceSecondaryBrush}" HorizontalAlignment="Left">
+                        <TextBlock x:Uid="PlanReviewMode" Text="Plan mode"
+                                   FontSize="{x:Bind Message.CardCaptionFontSize, Mode=OneWay}"
+                                   FontWeight="SemiBold" Foreground="{ThemeResource TextSecondaryBrush}" />
+                    </Border>
+                    <TextBlock x:Uid="PlanReviewHint" Text="Review scope, ordering, and risks before approving."
+                               Style="{StaticResource InteractiveHelperTextStyle}"
+                               FontSize="{x:Bind Message.CardCaptionFontSize, Mode=OneWay}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel x:Name="PlanUtilityActions" Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="ReviewSectionsButton" AutomationProperties.AutomationId="ReviewSectionsButton" x:Uid="PlanReviewSections" Content="Review sections…"
+                            Click="ReviewSections_Click"
+                            AutomationProperties.Name="Open full plan and review each section" />
+                    <Button x:Name="CopyPlanButton" AutomationProperties.AutomationId="CopyPlanButton" x:Uid="PlanReviewCopy" Content="Copy plan"
+                            Click="CopyPlan_Click"
+                            AutomationProperties.Name="Copy execution plan" />
+                </StackPanel>
+                <local:MarkdownTextBlock x:Uid="PlanReviewBody"
+                                         Markdown="{x:Bind Message.PlanReviewPreview, Mode=OneWay}"
+                                         FontSize="{x:Bind Message.CardBodyFontSize, Mode=OneWay}"
+                                         AutomationProperties.Name="Execution plan preview" />
+                <TextBlock x:Uid="PlanReviewPreviewTruncated"
+                           Text="Preview shortened. Open Review sections to read the complete plan."
+                           Style="{StaticResource InteractiveHelperTextStyle}"
+                           FontSize="{x:Bind Message.CardCaptionFontSize, Mode=OneWay}"
+                           Visibility="{x:Bind Message.IsPlanReviewPreviewTruncated, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+
+                <StackPanel Spacing="8" Visibility="{x:Bind Message.IsPlanFeedbackOpen, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <TextBlock x:Uid="PlanReviewChangeQuestion" Text="What should the agent change?"
+                               Style="{StaticResource InteractiveFieldLabelStyle}"
+                               FontSize="{x:Bind Message.CardBodyFontSize, Mode=OneWay}" />
+                    <TextBox x:Uid="PlanReviewFeedback" Text="{x:Bind Message.PlanFeedback, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        PlaceholderText="Describe the revision you want…" AcceptsReturn="True" TextWrapping="Wrap"
+                        MinHeight="72" MaxHeight="150"
+                        FontSize="{x:Bind Message.CardBodyFontSize, Mode=OneWay}"
+                        IsEnabled="{x:Bind Message.IsInteractiveEditable, Mode=OneWay}"
+                        KeyDown="Feedback_KeyDown" />
+                    <StackPanel x:Name="FeedbackActions" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                        <Button x:Uid="CommonCancelButton" Content="Cancel" Style="{StaticResource InteractiveCardTertiaryButtonStyle}" Click="CancelFeedback_Click" />
+                        <Button x:Uid="PlanReviewSendFeedback" Content="Send feedback" Style="{StaticResource InteractiveCardPrimaryButtonStyle}"
+                            IsEnabled="{x:Bind Message.CanSendPlanFeedback, Mode=OneWay}" Click="SendFeedback_Click" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Spacing="8" Visibility="{x:Bind Message.IsPlanRejectConfirmOpen, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <TextBlock x:Uid="PlanReviewRejectQuestion" Text="Reject this plan?"
+                               Style="{StaticResource InteractiveFieldLabelStyle}"
+                               FontSize="{x:Bind Message.CardBodyFontSize, Mode=OneWay}" />
+                    <TextBlock x:Uid="PlanReviewRejectWarning" Text="The agent will be told not to execute this plan. Optional feedback above will be included."
+                        Style="{StaticResource InteractiveHelperTextStyle}"
+                        FontSize="{x:Bind Message.CardCaptionFontSize, Mode=OneWay}" />
+                    <StackPanel x:Name="RejectConfirmActions" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                        <Button x:Uid="CommonCancelButton" Content="Cancel" Style="{StaticResource InteractiveCardTertiaryButtonStyle}" Click="CancelReject_Click" />
+                        <Button x:Uid="PlanReviewConfirmReject" Content="Confirm rejection" Style="{StaticResource InteractiveCardButtonStyle}" Click="ConfirmReject_Click" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Spacing="4" Visibility="{x:Bind Message.ShowInteractiveResult, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <TextBlock x:Uid="PlanReviewCompleted" Text="Review completed"
+                               Style="{StaticResource InteractiveFieldLabelStyle}"
+                               FontSize="{x:Bind Message.CardBodyFontSize, Mode=OneWay}" />
+                    <TextBlock Text="{x:Bind Message.InteractiveOutcomeText, Mode=OneWay}"
+                               FontSize="{x:Bind Message.CardBodyFontSize, Mode=OneWay}"
+                               TextWrapping="Wrap" Foreground="{ThemeResource TextSecondaryBrush}" />
+                </StackPanel>
+                <TextBlock Text="{x:Bind Message.InteractiveErrorText, Mode=OneWay}"
+                    FontSize="{x:Bind Message.CardCaptionFontSize, Mode=OneWay}" TextWrapping="Wrap"
+                    Foreground="{ThemeResource DangerBrush}" AutomationProperties.LiveSetting="Assertive"
+                    Visibility="{x:Bind Message.ShowInteractiveError, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+            </StackPanel>
+        </local:InteractiveCard.CardBody>
+        <local:InteractiveCard.CardFooter>
+            <StackPanel Padding="12,10" Spacing="8">
+                <TextBlock Text="{x:Bind Message.InteractiveStateDescription, Mode=OneWay}"
+                           Style="{StaticResource InteractiveHelperTextStyle}"
+                           FontSize="{x:Bind Message.CardCaptionFontSize, Mode=OneWay}"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center" />
+                <StackPanel x:Name="PlanActionButtons"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            HorizontalAlignment="Right"
+                            Visibility="{x:Bind Message.ShowInteractiveActions, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <Button x:Name="PlanRejectButton" AutomationProperties.AutomationId="PlanRejectButton" x:Uid="PlanReviewReject" Content="Reject"
+                            Style="{StaticResource InteractiveCardTertiaryButtonStyle}"
+                            IsEnabled="{x:Bind Message.IsInteractiveEditable, Mode=OneWay}"
+                            Click="Reject_Click" />
+                    <Button x:Name="PlanChangesButton" AutomationProperties.AutomationId="PlanChangesButton" x:Uid="PlanReviewRequestChanges" Content="Request changes"
+                            Style="{StaticResource InteractiveCardButtonStyle}"
+                            IsEnabled="{x:Bind Message.IsInteractiveEditable, Mode=OneWay}"
+                            Click="RequestChanges_Click" />
+                    <Button x:Name="PlanApproveButton" AutomationProperties.AutomationId="PlanApproveButton" Style="{StaticResource InteractiveCardPrimaryButtonStyle}"
+                            IsEnabled="{x:Bind Message.IsInteractiveEditable, Mode=OneWay}"
+                            Click="Approve_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <ProgressRing Width="14" Height="14"
+                                          IsActive="{x:Bind Message.IsInteractiveSubmitting, Mode=OneWay}"
+                                          Visibility="{x:Bind Message.IsInteractiveSubmitting, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                            <TextBlock Text="{x:Bind Message.PlanReviewSubmitLabel, Mode=OneWay}" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </local:InteractiveCard.CardFooter>
+        </local:InteractiveCard>
+    </Grid>
+</UserControl>

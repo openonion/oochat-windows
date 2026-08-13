@@ -1,0 +1,42 @@
+<Project>
+  <!--
+    THE SINGLE VERSION SOURCE. Nothing else in the repo hard-codes a version.
+
+    `VersionPrefix` flows into AssemblyVersion / FileVersion / InformationalVersion for every
+    project, which is what AppVersionService reads when the app runs unpackaged. The packaged
+    build additionally stamps Package.appxmanifest (see scripts/Set-PackageIdentity.ps1), which
+    is what AppVersionService reads when it runs packaged — the two must agree, and deriving
+    both from here is how that is arranged.
+
+    The release workflow overrides this from the `v*` tag, so the value committed here is only
+    ever what a local or CI build reports. Keep it at or below the next intended release so a
+    development build never claims to be a version that shipped.
+  -->
+  <PropertyGroup>
+    <VersionPrefix>0.1.0</VersionPrefix>
+
+    <!--
+      Pin the Windows SDK targeting pack independently of the installed .NET SDK. SDK 10.0.301
+      resolves 10.0.19041.57, whose C#/WinRT 2.2 runtime emits 35 IL2081 trim warnings from its
+      generated ABI marshalling. 10.0.19041.87 carries C#/WinRT 2.3.1 and publishes cleanly while
+      preserving the app's Windows 10 19041 compile target and 17763 minimum runtime version.
+    -->
+    <WindowsSdkPackageVersion>10.0.19041.87</WindowsSdkPackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>moderate</NuGetAuditLevel>
+    <!-- Commit the complete dependency graph and refuse silent graph changes in CI. Developers
+         can intentionally refresh it with dotnet restore's force-evaluate option. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+</Project>

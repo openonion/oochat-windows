@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="ConnectOnion.WinUIClient.Views.AgentDetailPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:ConnectOnion.WinUIClient.Controls"
+    xmlns:animations="using:CommunityToolkit.WinUI.Animations"
+    xmlns:ic="using:FluentIcons.WinUI"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid x:Name="AgentRoot"
+          Background="{ThemeResource AppBackgroundBrush}"
+          SizeChanged="AgentRoot_SizeChanged">
+        <!-- Driven by the page's own SizeChanged rather than AdaptiveTrigger: the content pane is
+             up to 288px narrower than the window once the sidebar is open, so a MinWindowWidth
+             trigger switched this page to its roomier padding while it actually had ~430px. -->
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="WindowWidthStates">
+                <VisualState x:Name="Narrow">
+                    <VisualState.Setters>
+                        <Setter Target="ContentScroll.Padding" Value="{StaticResource AgentDetailPaddingNarrow}" />
+                        <Setter Target="ProfilePanel.Margin" Value="0,4,0,8" />
+                        <Setter Target="AgentDetailAvatar.Size" Value="64" />
+                        <Setter Target="AgentDetailAvatar.FontSize" Value="{StaticResource ProductSectionTitleFontSize}" />
+                        <Setter Target="AgentDetailAvatar.CornerRadius" Value="20" />
+                        <Setter Target="AgentNameText.FontSize" Value="{StaticResource ProductTitleFontSize}" />
+                        <Setter Target="AgentNameText.Margin" Value="0,14,0,0" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Wide">
+                    <VisualState.Setters>
+                        <Setter Target="ContentScroll.Padding" Value="{StaticResource AgentDetailPaddingWide}" />
+                        <Setter Target="ProfilePanel.Margin" Value="0,8,0,12" />
+                        <!-- Larger identity mark on tall/wide panes; type stays on the Product ramp. -->
+                        <Setter Target="AgentDetailAvatar.Size" Value="88" />
+                        <Setter Target="AgentDetailAvatar.FontSize" Value="{StaticResource ProductTitleFontSize}" />
+                        <Setter Target="AgentDetailAvatar.CornerRadius" Value="26" />
+                        <Setter Target="AgentNameText.FontSize" Value="{StaticResource ProductHeroFontSize}" />
+                        <Setter Target="AgentNameText.Margin" Value="0,20,0,0" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Equal star rows centre the identity block in the pane above the composer. Star rows
+             still collapse when height is tight. -->
+        <ScrollViewer x:Name="ContentScroll"
+                      Grid.Row="0"
+                      HorizontalScrollMode="Disabled"
+                      HorizontalScrollBarVisibility="Disabled"
+                      HorizontalContentAlignment="Stretch"
+                      VerticalScrollMode="Enabled"
+                      VerticalScrollBarVisibility="Auto"
+                      VerticalContentAlignment="Stretch"
+                      Visibility="{x:Bind Vm.HasAgent, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+            <!-- Four tiers, separated by gap size rather than by added chrome: identity, what the
+                 agent is, the one action, then quiet affordances. The panel's own Spacing is 0 on
+                 purpose — every gap is a margin declared by the tier that opens, so the rhythm
+                 (6 within a tier, 18-26 between them) is visible in one place and reviewable.
+                 A uniform Spacing="10" is what made seven unrelated elements read as one list. -->
+            <StackPanel x:Name="ProfilePanel"
+                        Grid.Row="1"
+                        MaxWidth="620"
+                        Margin="0,8,0,12"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="0">
+
+                <!-- Tier 1 · Identity. The name owns its own line now; presence moved beneath it
+                     rather than sitting alongside at 12px, where it competed for the same line and
+                     capped how large the name could get. -->
+                <controls:AgentAvatar x:Name="AgentDetailAvatar"
+                                      x:Uid="AgentDetailIcon"
+                                      Size="64"
+                                      CornerRadius="20"
+                                      FontSize="{StaticResource ProductSectionTitleFontSize}"
+                                      HorizontalAlignment="Center"
+                                      Initial="{x:Bind Vm.AgentInitial, Mode=OneWay}"
+                                      ImagePath="{x:Bind Vm.AgentIconPath, Mode=OneWay}"
+                                      AutomationProperties.Name="Agent icon" />
+
+                <TextBlock x:Name="AgentNameText"
+                           Text="{x:Bind Vm.AgentDisplayName, Mode=OneWay}"
+                           MaxWidth="560"
+                           Margin="0,16,0,0"
+                           FontSize="{StaticResource ProductHeroFontSize}"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+
+                <StackPanel Orientation="Horizontal"
+                            Margin="0,8,0,0"
+                            Spacing="{StaticResource Spacing8}"
+                            HorizontalAlignment="Center"
+                            AutomationProperties.Name="{x:Bind Vm.PresenceLabel, Mode=OneWay}">
+                    <ProgressRing Width="12"
+                                  Height="12"
+                                  VerticalAlignment="Center"
+                                  IsActive="{x:Bind Vm.IsCheckingPresence, Mode=OneWay}"
+                                  Visibility="{x:Bind Vm.IsCheckingPresence, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                    <Ellipse Width="7"
+                             Height="7"
+                             VerticalAlignment="Center"
+                             Fill="{x:Bind Vm.Presence, Mode=OneWay, Converter={StaticResource PresenceToBrush}}"
+                             Visibility="{x:Bind Vm.IsCheckingPresence, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+                    <TextBlock Text="{x:Bind Vm.PresenceLabel, Mode=OneWay}"
+                               FontSize="{StaticResource ProductBodyFontSize}"
+                               VerticalAlignment="Center"
+                               Foreground="{x:Bind Vm.Presence, Mode=OneWay, Converter={StaticResource PresenceToBrush}}" />
+                </StackPanel>
+
+                <!-- Tier 2 · What it is. The model is the one fact here a reader acts on, so it
+                     gets a chip of its own instead of being the first third of a run-on line. -->
+                <StackPanel Orientation="Horizontal"
+                            Margin="0,12,0,0"
+                            Spacing="{StaticResource Spacing8}"
+                            HorizontalAlignment="Center">
+                    <Border Padding="9,3"
+                            CornerRadius="6"
+                            Background="{ThemeResource SurfaceSecondaryBrush}"
+                            BorderBrush="{ThemeResource BorderSubtleBrush}"
+                            BorderThickness="1"
+                            Visibility="{x:Bind Vm.HasDisplayModel, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{x:Bind Vm.DisplayModel, Mode=OneWay}"
+                                   FontSize="{StaticResource ProductCaptionFontSize}"
+                                   FontWeight="SemiBold"
+                                   Foreground="{ThemeResource TextTertiaryBrush}" />
+                    </Border>
+                    <Border Padding="9,3"
+                            CornerRadius="6"
+                            Background="{ThemeResource SurfaceSecondaryBrush}"
+                            BorderBrush="{ThemeResource BorderSubtleBrush}"
+                            BorderThickness="1"
+                            Visibility="{x:Bind Vm.HasProfileDetail, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{x:Bind Vm.ProfileDetail, Mode=OneWay}"
+                                   FontSize="{StaticResource ProductCaptionFontSize}"
+                                   Foreground="{ThemeResource TextTertiaryBrush}" />
+                    </Border>
+                </StackPanel>
+
+                <TextBlock Text="{x:Bind Vm.AcceptedInputsSummary, Mode=OneWay}"
+                           Margin="0,8,0,0"
+                           FontSize="{StaticResource ProductCaptionFontSize}"
+                           Foreground="{ThemeResource TextTertiaryBrush}"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           Visibility="{x:Bind Vm.HasAcceptedInputsSummary, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+
+                <!-- Quiet secondary actions stay together at one weight below the profile. -->
+                <StackPanel Orientation="Horizontal"
+                            Margin="0,10,0,0"
+                            Spacing="{StaticResource Spacing4}"
+                            HorizontalAlignment="Center">
+                    <Button MinWidth="0"
+                            MinHeight="36"
+                            Padding="12,0"
+                            CornerRadius="8"
+                            Style="{StaticResource TextActionButtonStyle}"
+                            UseSystemFocusVisuals="True"
+                            AutomationProperties.Name="{x:Bind Vm.ToolsToggleLabel, Mode=OneWay}"
+                            Visibility="{x:Bind Vm.HasToolSummary, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="{x:Bind Vm.ToolsToggleLabel, Mode=OneWay}"
+                                       FontSize="{StaticResource ProductCaptionFontSize}"
+                                       Foreground="{ThemeResource TextTertiaryBrush}"
+                                       VerticalAlignment="Center" />
+                            <ic:FluentIcon Icon="ChevronDown"
+                                           IconVariant="Regular"
+                                           IconSize="Size12"
+                                           Foreground="{ThemeResource TextTertiaryBrush}"
+                                           VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Button.Flyout>
+                            <Flyout Placement="Bottom">
+                                <StackPanel Width="420"
+                                            MaxWidth="520"
+                                            Spacing="8">
+                                    <TextBlock x:Uid="AgentDetailTools" Text="Available tools"
+                                               FontSize="{StaticResource ProductBodyFontSize}"
+                                               FontWeight="SemiBold" />
+                                    <TextBlock Text="{x:Bind Vm.ToolsDisplayText, Mode=OneWay}"
+                                               FontSize="{StaticResource ProductBodyFontSize}"
+                                               Foreground="{ThemeResource TextSecondaryBrush}"
+                                               TextWrapping="Wrap"
+                                               AutomationProperties.Name="{x:Bind Vm.ToolsDisplayText, Mode=OneWay}" />
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+
+                    <Button x:Uid="AgentDetailBalance" x:Name="BalanceButton" AutomationProperties.AutomationId="BalanceButton"
+                            MinWidth="0"
+                            MinHeight="36"
+                            Padding="12,0"
+                            CornerRadius="8"
+                            FontSize="{StaticResource ProductCaptionFontSize}"
+                            Foreground="{ThemeResource TextTertiaryBrush}"
+                            Style="{StaticResource TextActionButtonStyle}"
+                            Visibility="Collapsed"
+                            Click="Balance_Click"
+                            AutomationProperties.Name="View balance and top up for this agent" />
+
+                    <Button x:Uid="AgentDetailShare" Content="Share"
+                            MinWidth="0"
+                            MinHeight="36"
+                            Padding="12,0"
+                            CornerRadius="8"
+                            FontSize="{StaticResource ProductCaptionFontSize}"
+                            Foreground="{ThemeResource TextTertiaryBrush}"
+                            Style="{StaticResource TextActionButtonStyle}"
+                            Click="Share_Click"
+                            Visibility="{x:Bind Vm.CanShareAgent, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                            AutomationProperties.Name="Share this relay agent">
+                        <Button.ContentTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="5">
+                                    <!-- QrCode ships only in Size20+ font files (not Size16); Size16
+                                         reserved an empty slot and looked like a missing icon. -->
+                                    <ic:FluentIcon Icon="QrCode"
+                                                   IconVariant="Regular"
+                                                   IconSize="Size20"
+                                                   Foreground="{ThemeResource TextTertiaryBrush}"
+                                                   VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding}"
+                                               Foreground="{ThemeResource TextTertiaryBrush}"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </Button.ContentTemplate>
+                    </Button>
+                </StackPanel>
+
+                <ProgressRing x:Uid="AgentDetailCapabilitiesProgress" Width="18"
+                              Height="18"
+                              Margin="0,14,0,0"
+                              HorizontalAlignment="Center"
+                              AutomationProperties.AutomationId="AgentCapabilitiesLoadingIndicator"
+                              AutomationProperties.Name="Loading agent capabilities"
+                              IsActive="{x:Bind Vm.IsLoading, Mode=OneWay}"
+                              Visibility="{x:Bind Vm.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+
+                <InfoBar x:Uid="AgentDetailStartError" Severity="Error"
+                         Margin="0,18,0,0"
+                         Title="Couldn't start the conversation"
+                         Message="{x:Bind Vm.StatusText, Mode=OneWay}"
+                         IsOpen="{x:Bind Vm.HasError, Mode=OneWay}"
+                         Visibility="{x:Bind Vm.HasError, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                         IsClosable="False"
+                         AutomationProperties.LiveSetting="Assertive" />
+
+                <controls:OfflineNoticeBar MaxWidth="620"
+                                           Margin="0,18,0,0"
+                                           HorizontalAlignment="Stretch"
+                                           Detail="{x:Bind Vm.PresenceDetail, Mode=OneWay}"
+                                           CanRecheck="{x:Bind Vm.HasAgent, Mode=OneWay}"
+                                           IsChecking="{x:Bind Vm.IsCheckingPresence, Mode=OneWay}"
+                                           StatusMessage="{x:Bind Vm.RecheckFailedMessage, Mode=OneWay}"
+                                           RecheckRequested="OfflineNotice_RecheckRequested"
+                                           Visibility="{x:Bind Vm.ShowOfflineNotice, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <animations:Implicit.ShowAnimations>
+                        <animations:OpacityAnimation From="0"
+                                                     To="1"
+                                                     Duration="0:0:0.2" />
+                        <animations:TranslationAnimation From="0,10,0"
+                                                         To="0,0,0"
+                                                         Duration="0:0:0.2" />
+                    </animations:Implicit.ShowAnimations>
+                </controls:OfflineNoticeBar>
+            </StackPanel>
+            </Grid>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="0"
+                    Spacing="8"
+                    Margin="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Visibility="{x:Bind Vm.HasAgent, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=invert}">
+            <TextBlock x:Uid="AgentEmptyTitle"
+                       Text="No agent selected"
+                       Style="{StaticResource SubtitleTextBlockStyle}"
+                       TextAlignment="Center" />
+            <TextBlock x:Uid="AgentEmptyDescription"
+                       Text="Select an agent from the sidebar or add a new one to get started."
+                       Foreground="{ThemeResource TextSecondaryBrush}"
+                       TextAlignment="Center"
+                       TextWrapping="WrapWholeWords" />
+        </StackPanel>
+
+        <!-- Suggestions are on here and nowhere else: this is the agent's landing surface, the one
+             moment a user has nothing typed and no idea what to ask for. The agent's usable skill
+             offers come first, and generic starters fill the row to three. -->
+        <controls:ChatComposer x:Name="Composer"
+                               Grid.Row="1"
+                               CanSubmit="{x:Bind Vm.CanStartConversation, Mode=OneWay}"
+                               EnterToSubmit="{x:Bind Vm.EnterToSend, Mode=OneWay}"
+                               AcceptedInputs="{x:Bind Vm.AcceptedInputs, Mode=OneWay}"
+                               Skills="{x:Bind Vm.Skills, Mode=OneWay}"
+                               PlaceholderText="{x:Bind Vm.ComposerPlaceholder, Mode=OneWay}"
+                               ShowSuggestions="True"
+                               SuggestionPrompts="{x:Bind Vm.SkillOffers, Mode=OneWay}"
+                               ShowModeSelector="True"
+                               Mode="{x:Bind Vm.CurrentMode, Mode=OneWay}"
+                               ModeChangeRequested="Composer_ModeChangeRequested"
+                               SubmitRequested="Composer_SubmitRequested"
+                               Visibility="{x:Bind Vm.HasAgent, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+    </Grid>
+</Page>

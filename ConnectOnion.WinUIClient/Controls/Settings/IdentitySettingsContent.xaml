@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl x:Class="ConnectOnion.WinUIClient.Controls.IdentitySettingsContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ic="using:FluentIcons.WinUI"
+    MinWidth="0" HorizontalAlignment="Stretch">
+    <StackPanel MinWidth="0" HorizontalAlignment="Stretch" Spacing="16">
+        <TextBlock x:Uid="IdentityDescription" Text="This desktop client uses an Ed25519 identity to sign ConnectOnion messages. Agents recognize you by the address below."
+                   TextWrapping="Wrap" Foreground="{ThemeResource TextSecondaryBrush}" />
+        <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch">
+            <StackPanel Spacing="18">
+                <Grid MinWidth="0" ColumnSpacing="14">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" MinWidth="0" Spacing="4">
+                <TextBlock x:Uid="IdentityAddress" Text="Address" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock x:Name="AddressText" TextWrapping="Wrap" IsTextSelectionEnabled="True" FontFamily="{StaticResource JetBrainsMonoFontFamily}" />
+                    </StackPanel>
+                    <Button x:Uid="IdentityCopyAddress" Grid.Column="1" Tag="address" Padding="10,6" VerticalAlignment="Center"
+                            Click="Copy_Click" AutomationProperties.Name="Copy identity address" ToolTipService.ToolTip="Copy address">
+                        <ic:FluentIcon Icon="Copy" IconVariant="Regular" IconSize="Size16" />
+                    </Button>
+                </Grid>
+                <Grid MinWidth="0" ColumnSpacing="14">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" MinWidth="0" Spacing="4">
+                <TextBlock x:Uid="IdentityPublicKey" Text="Public key" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock x:Name="PublicKeyText" TextWrapping="Wrap" IsTextSelectionEnabled="True" FontFamily="{StaticResource JetBrainsMonoFontFamily}" />
+                    </StackPanel>
+                    <Button x:Uid="IdentityCopyPublicKey" Grid.Column="1" Tag="publicKey" Padding="10,6" VerticalAlignment="Center"
+                            Click="Copy_Click" AutomationProperties.Name="Copy public key" ToolTipService.ToolTip="Copy public key">
+                        <ic:FluentIcon Icon="Copy" IconVariant="Regular" IconSize="Size16" />
+                    </Button>
+                </Grid>
+                <StackPanel Spacing="4">
+                <TextBlock x:Uid="IdentityStorage" Text="Storage" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock x:Name="StorageText" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                               FontFamily="{StaticResource JetBrainsMonoFontFamily}" Foreground="{ThemeResource TextSecondaryBrush}" />
+                </StackPanel>
+                <TextBlock x:Uid="IdentityStorageDescription" Text="Your private identity is encrypted on this device with your Windows account, which is what keeps the database safe — and also why a copy of it cannot be opened anywhere else. Use the backup below to move this identity to another machine."
+                           TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextSecondaryBrush}" />
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch">
+            <StackPanel Spacing="12">
+                <Grid ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="3">
+                <TextBlock x:Uid="IdentityAccount" Text="OpenOnion account" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock x:Uid="IdentityAccountDescription" Text="Signed in with this device identity. The API key remains in memory only."
+                                   TextWrapping="Wrap"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextSecondaryBrush}" />
+                    </StackPanel>
+                    <Button x:Uid="IdentityRefresh" Grid.Column="1"
+                            Content="Refresh"
+                            VerticalAlignment="Center"
+                            Click="RefreshAccount_Click"
+                            AutomationProperties.Name="Refresh OpenOnion balance" />
+                </Grid>
+
+                <ProgressRing x:Uid="IdentityAccountProgress" x:Name="AccountProgress"
+                              Width="18"
+                              Height="18"
+                              HorizontalAlignment="Left"
+                              IsActive="False"
+                              Visibility="Collapsed"
+                              AutomationProperties.Name="Loading OpenOnion account" />
+                <InfoBar x:Uid="IdentityAccountError" x:Name="AccountErrorBar"
+                         Severity="Warning"
+                         Title="Account unavailable"
+                         IsOpen="False"
+                         IsClosable="False" />
+
+                <StackPanel x:Name="AccountSummaryPanel" Spacing="12" Visibility="Collapsed">
+                    <Grid ColumnSpacing="18">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2">
+                            <TextBlock x:Uid="IdentityBalance" Text="Balance" Style="{StaticResource CaptionTextBlockStyle}" />
+                            <TextBlock x:Name="BalanceText" FontSize="{StaticResource ProductSectionTitleFontSize}" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="2">
+                            <TextBlock x:Uid="IdentityPurchased" Text="Purchased" Style="{StaticResource CaptionTextBlockStyle}" />
+                            <TextBlock x:Name="PurchasedText" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="2">
+                            <TextBlock x:Uid="IdentitySpent" Text="Spent" Style="{StaticResource CaptionTextBlockStyle}" />
+                            <TextBlock x:Name="SpentText" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel MinWidth="0" Spacing="3">
+                    <TextBlock x:Uid="IdentityApiKey" Text="API key" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <TextBlock x:Uid="IdentityMaskedKey" x:Name="ApiKeyText"
+                                       TextTrimming="CharacterEllipsis"
+                                       IsTextSelectionEnabled="True"
+                                       FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                                       AutomationProperties.Name="Masked OpenOnion API key" />
+                        </StackPanel>
+                        <Button x:Uid="IdentityReveal" x:Name="RevealApiKeyButton" AutomationProperties.AutomationId="RevealApiKeyButton"
+                                Grid.Column="1"
+                                Content="Reveal"
+                                Click="RevealApiKey_Click"
+                                AutomationProperties.Name="Reveal OpenOnion API key" />
+                        <Button x:Uid="IdentityCopy" Grid.Column="2"
+                                Tag="apiKey"
+                                Content="Copy"
+                                Click="Copy_Click"
+                                AutomationProperties.Name="Copy OpenOnion API key" />
+                    </Grid>
+
+                    <Button x:Uid="IdentityTopUp" Content="Top up balance"
+                            HorizontalAlignment="Left"
+                            Click="TopUp_Click"
+                            AutomationProperties.Name="Open the OpenOnion purchase page" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch">
+            <StackPanel Spacing="12">
+                <TextBlock x:Uid="IdentityBackup" Text="Backup and recovery" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock x:Name="BackupDescriptionText" TextWrapping="Wrap" MinWidth="0"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextSecondaryBrush}" />
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <!-- The button's uid must differ from the label's: an x:Uid is a key into one
+                         global resource map, so a shared one pushes every <uid>.<Property> row
+                         onto both elements — and IdentityShowPhrase.Text on a Button throws
+                         XamlParseException at load. -->
+                    <Button x:Uid="IdentityShowPhraseButton" x:Name="ShowBackupButton" Click="ShowBackup_Click"
+                            AutomationProperties.AutomationId="ShowIdentityBackupButton"
+                            AutomationProperties.Name="Show recovery phrase">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ic:FluentIcon Icon="Key" IconVariant="Regular" IconSize="Size16" />
+                            <TextBlock x:Uid="IdentityShowPhrase" x:Name="ShowBackupButtonText" Text="Show recovery phrase" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Uid="IdentityRestoreButton" x:Name="RestoreButton" Click="Restore_Click"
+                            AutomationProperties.AutomationId="RestoreIdentityButton"
+                            AutomationProperties.Name="Restore an identity from a recovery phrase">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ic:FluentIcon Icon="ArrowClockwise" IconVariant="Regular" IconSize="Size16" />
+                            <TextBlock x:Uid="IdentityRestore" Text="Restore..." />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Uid="IdentityRegenerate" x:Name="GenerateIdentityButton"
+                            Click="GenerateIdentity_Click"
+                            Foreground="{ThemeResource DangerBrush}"
+                            AutomationProperties.AutomationId="GenerateIdentityButton"
+                            AutomationProperties.Name="Generate a new ConnectOnion identity">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ic:FluentIcon Icon="ArrowSync" IconVariant="Regular" IconSize="Size16" />
+                            <TextBlock x:Uid="IdentityGenerate" Text="Generate new..." />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+                <InfoBar x:Uid="IdentityUnchanged" x:Name="IdentityActionErrorBar"
+                         Severity="Error"
+                         Title="Identity unchanged"
+                         IsOpen="False"
+                         IsClosable="True" />
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="ConnectOnion.WinUIClient.Controls.InteractiveCard"
+    x:Name="Root"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ic="using:FluentIcons.WinUI"
+    xmlns:models="using:ConnectOnion.WinUIClient.Models">
+    <Border x:Name="CardBorder"
+            MaxWidth="{StaticResource ChatColumnWidth}"
+            HorizontalAlignment="Stretch"
+            CornerRadius="{StaticResource InteractiveCardCornerRadius}"
+            Background="{x:Bind IsCompact, Mode=OneWay, Converter={StaticResource BoolToResourceBrush}, ConverterParameter=ChatBackgroundBrush|SurfacePrimaryBrush}"
+            BorderBrush="{x:Bind ChromeTone, Mode=OneWay, Converter={StaticResource InteractiveToneToBrush}}"
+            BorderThickness="1"
+            AutomationProperties.Name="{x:Bind AccessibilityName, Mode=OneWay}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <!-- Tone rail. Drawn only when the tone actually carries a signal — see
+                 ShowChromeRail for why a Neutral card must not paint one. -->
+            <Border Grid.RowSpan="4"
+                    Width="3"
+                    HorizontalAlignment="Left"
+                    Background="{x:Bind ChromeTone, Mode=OneWay, Converter={StaticResource InteractiveToneToBrush}}"
+                    Visibility="{x:Bind ShowChromeRail, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                    AutomationProperties.AccessibilityView="Raw" />
+            <!-- The header is the disclosure control. Same shape as ToolActivityView's: a
+                 transparent Button wrapping the whole row, so the entire strip is one large hit
+                 target and one tab stop rather than a small chevron the user has to aim at. -->
+            <Button x:Name="HeaderToggle" AutomationProperties.AutomationId="HeaderToggle"
+                    Padding="{x:Bind IsCompact, Mode=OneWay, Converter={StaticResource BoolToThickness}, ConverterParameter='12,9|14,12'}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    Style="{StaticResource TransparentButtonStyle}"
+                    Click="HeaderToggle_Click"
+                    PointerEntered="HeaderToggle_PointerEntered"
+                    PointerExited="HeaderToggle_PointerExited"
+                    IsTabStop="{x:Bind CanCollapse, Mode=OneWay}"
+                    AutomationProperties.Name="{x:Bind HeaderToggleName, Mode=OneWay}">
+                <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{x:Bind IconGlyph, Mode=OneWay}"
+                           FontFamily="Segoe Fluent Icons"
+                           FontSize="{StaticResource ProductSubtitleFontSize}"
+                           VerticalAlignment="Top"
+                           Foreground="{x:Bind IconTone, Mode=OneWay, Converter={StaticResource InteractiveToneToBrush}}"
+                           AutomationProperties.AccessibilityView="Raw" />
+                <StackPanel Grid.Column="1" Spacing="2">
+                    <TextBlock Text="{x:Bind Title, Mode=OneWay}"
+                               Style="{StaticResource InteractiveCardTitleStyle}"
+                               FontSize="{x:Bind Message.CardTitleFontSize, Mode=OneWay}"
+                               TextAlignment="Left" />
+                    <TextBlock Text="{x:Bind Subtitle, Mode=OneWay}"
+                               Style="{StaticResource InteractiveCardSubtitleStyle}"
+                               FontSize="{x:Bind Message.CardCaptionFontSize, Mode=OneWay}"
+                               TextAlignment="Left"
+                               Visibility="{x:Bind Subtitle, Mode=OneWay, Converter={StaticResource StringToVis}}" />
+                </StackPanel>
+                <Border Grid.Column="2"
+                        Padding="8,3"
+                        CornerRadius="4"
+                        VerticalAlignment="Top"
+                        Visibility="{x:Bind ShowStatusBadge, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                        Background="{x:Bind IconTone, Mode=OneWay, Converter={StaticResource InteractiveToneToBrush}, ConverterParameter=surface}">
+                    <TextBlock Text="{x:Bind StatusLabel, Mode=OneWay}"
+                               Style="{StaticResource InteractiveCardBadgeTextStyle}"
+                               FontSize="{x:Bind Message.CardCaptionFontSize, Mode=OneWay}"
+                               Foreground="{x:Bind IconTone, Mode=OneWay, Converter={StaticResource InteractiveToneToBrush}}" />
+                </Border>
+                <TextBlock Grid.Column="2" Text="{x:Bind HeaderMeta, Mode=OneWay}"
+                           FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                           FontSize="{x:Bind Message.CardCodeFontSize, Mode=OneWay}"
+                           VerticalAlignment="Top"
+                           Foreground="{ThemeResource TextSecondaryBrush}"
+                           Visibility="{x:Bind ShowStatusBadge, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+
+                <!-- Hidden when there is no body to disclose, so the affordance never promises
+                     something that will not happen. -->
+                <ic:FluentIcon x:Name="HeaderChevron"
+                               Grid.Column="3"
+                               Icon="ChevronDown"
+                               IconVariant="Regular"
+                               IconSize="Size12"
+                               VerticalAlignment="Center"
+                               Opacity="0.75"
+                               Foreground="{ThemeResource TextTertiaryBrush}"
+                               RenderTransformOrigin="0.5,0.5"
+                               Visibility="{x:Bind CanCollapse, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                               AutomationProperties.AccessibilityView="Raw">
+                    <ic:FluentIcon.RenderTransform>
+                        <RotateTransform Angle="{x:Bind ChevronAngle, Mode=OneWay}" />
+                    </ic:FluentIcon.RenderTransform>
+                </ic:FluentIcon>
+                </Grid>
+            </Button>
+            <Border Grid.Row="1" Height="1" Background="{ThemeResource BorderSubtleBrush}"
+                    Visibility="{x:Bind IsBodyVisible, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+            <ContentPresenter Grid.Row="2" Content="{x:Bind CardBody, Mode=OneWay}"
+                              Visibility="{x:Bind IsBodyVisible, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+            <Grid Grid.Row="3" Visibility="{x:Bind ShowFooter, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Border Height="1" Background="{ThemeResource BorderSubtleBrush}" />
+                <ContentPresenter Grid.Row="1" Content="{x:Bind CardFooter, Mode=OneWay}" />
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

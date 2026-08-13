@@ -1,0 +1,85 @@
+# Logs
+logs/
+*.log
+
+# Environment files
+.env
+.env.*
+!.env.example
+*.local
+
+# ConnectOnion agent local state and secrets
+.co/
+.agents/
+.claude/
+skills-lock.json
+
+# Database and local runtime data
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+/data/
+tmp/
+temp/
+
+# Build and packaging
+*.exe
+*.msi
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+*.appxupload
+*.binlog
+
+# .NET / WinUI 3 build output
+[Bb]in/
+[Oo]bj/
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+artifacts/
+publish/
+AppPackages/
+BundleArtifacts/
+Generated Files/
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+project.lock.json
+project.assets.json
+*.nuget.props
+*.nuget.targets
+
+# Visual Studio / Rider user state
+.vs/
+.idea/
+*.user
+*.userosscache
+*.suo
+*.rsuser
+*.sln.docstates
+*.VisualState.xml
+*.cachefile
+*.pdb
+
+# WinUI / MSIX signing and publish-local files
+*_TemporaryKey.pfx
+*.pfx
+*.p12
+*.cer
+*.pubxml.user
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+*.sw?

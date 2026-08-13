@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="ConnectOnion.WinUIClient.Controls.KeyboardShortcutEditorRow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:ConnectOnion.WinUIClient.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="4"
+            Padding="14,10">
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel VerticalAlignment="Center" Spacing="2">
+                <TextBlock x:Name="NameText" />
+                <!-- A fixed row says why it is fixed; a customizable one shows a conflict here
+                     when the last capture was refused. Only ever one of the two. -->
+                <TextBlock x:Name="ReasonText"
+                           FontSize="{StaticResource ProductCaptionFontSize}"
+                           Foreground="{ThemeResource TextSecondaryBrush}"
+                           Visibility="Collapsed"
+                           TextWrapping="Wrap" />
+                <TextBlock x:Name="ConflictText"
+                           FontSize="{StaticResource ProductCaptionFontSize}"
+                           Foreground="{ThemeResource StatusErrorTextBrush}"
+                           Visibility="Collapsed"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!-- Customizable: capture control. Fixed: the same keycap text, not editable. -->
+            <controls:HotkeyInput x:Name="Hotkey"
+                                  Grid.Column="1"
+                                  VerticalAlignment="Center"
+                                  Visibility="Collapsed" />
+            <Border x:Name="FixedKeys"
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Visibility="Collapsed"
+                    Background="{ThemeResource SurfaceElevatedBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    MinWidth="150"
+                    Padding="10,5">
+                <TextBlock x:Name="FixedKeysText"
+                           FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                           FontSize="{StaticResource ProductCaptionFontSize}"
+                           TextAlignment="Center"
+                           Foreground="{ThemeResource TextSecondaryBrush}" />
+            </Border>
+
+            <Button x:Uid="KeyboardReset" x:Name="ResetButton" AutomationProperties.AutomationId="ResetButton"
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Visibility="Collapsed"
+                    Click="Reset_Click"
+                    Content="Reset" />
+        </Grid>
+    </Border>
+</UserControl>

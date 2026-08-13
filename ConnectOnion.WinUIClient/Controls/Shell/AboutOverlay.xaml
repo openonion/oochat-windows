@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl x:Class="ConnectOnion.WinUIClient.Controls.AboutOverlay"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ic="using:FluentIcons.WinUI"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch"
+    AutomationProperties.AutomationId="AboutOverlay"
+    Visibility="Collapsed"
+    IsHitTestVisible="False"
+    IsTabStop="False">
+    <UserControl.Resources>
+        <Style x:Key="AboutCloseButtonStyle" TargetType="Button" BasedOn="{StaticResource SmallIconButtonStyle}">
+            <Setter Property="Width" Value="36" /><Setter Property="Height" Value="36" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid x:Name="OverlayRoot" KeyDown="OverlayRoot_KeyDown">
+        <Rectangle Fill="{ThemeResource SettingsBackdropBrush}" Tapped="Backdrop_Tapped" />
+
+        <Border x:Name="ModalContainer" MaxWidth="400" Margin="24"
+                HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                Background="{ThemeResource SettingsContentBrush}" BorderBrush="{ThemeResource SettingsModalBorderBrush}"
+                BorderThickness="1" CornerRadius="14" Tapped="ModalContainer_Tapped">
+            <Border.Shadow><ThemeShadow /></Border.Shadow>
+
+            <Grid MinWidth="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Title bar: app icon + title on the left, close on the right. -->
+                <Grid Padding="16,12,10,8" ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Image Source="ms-appx:///Assets/icon.png" Width="20" Height="20"
+                           VerticalAlignment="Center"
+                           AutomationProperties.AccessibilityView="Raw" />
+                    <TextBlock x:Uid="AboutTitle" Grid.Column="1" Text="About ConnectOnion"
+                               Style="{StaticResource BodyStrongTextBlockStyle}"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{ThemeResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                    <Button x:Uid="AboutClose" Grid.Column="2" TabIndex="1" Style="{StaticResource AboutCloseButtonStyle}" Click="CloseButton_Click"
+                            AutomationProperties.AutomationId="AboutCloseButton"
+                            AutomationProperties.Name="Close About ConnectOnion" ToolTipService.ToolTip="Close (Esc)">
+                        <ic:FluentIcon Icon="Dismiss" IconVariant="Regular" IconSize="Size20"
+                                       Foreground="{ThemeResource TextSecondaryBrush}" />
+                    </Button>
+                </Grid>
+
+                <!-- Content: logo, product name, tagline, version, copyright. Scrolls if the
+                     window is short or the user scales text up, so nothing gets clipped. -->
+                <ScrollViewer Grid.Row="1" Padding="28,4,28,20"
+                              HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto">
+                    <StackPanel HorizontalAlignment="Center" Spacing="6">
+                        <Image x:Uid="AboutLogo" Source="ms-appx:///Assets/icon.png" Width="72" Height="72"
+                               Margin="0,16,0,10" HorizontalAlignment="Center"
+                               AutomationProperties.Name="ConnectOnion logo" />
+
+                        <TextBlock Text="ConnectOnion" FontSize="{StaticResource ProductSectionTitleFontSize}" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextPrimaryBrush}" />
+
+                        <TextBlock x:Uid="AboutTagline" Text="Native access to ConnectOnion AI agents"
+                                   HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextSecondaryBrush}" />
+
+                        <TextBlock x:Name="VersionTextBlock" Text="{x:Bind VersionText}"
+                                   HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextSecondaryBrush}" />
+
+                        <TextBlock Text="{x:Bind CopyrightText}" Margin="0,14,0,0"
+                                   HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextTertiaryBrush}" />
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Footer: hairline divider + OK. -->
+                <Grid Grid.Row="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Border Height="1" Background="{ThemeResource DividerBrush}" />
+                    <Button x:Uid="AboutOk" x:Name="OkButton" Grid.Row="1" TabIndex="0"
+                            AutomationProperties.AutomationId="AboutOkButton"
+                            Style="{StaticResource AccentButtonStyle}"
+                            Content="OK" MinWidth="88" Margin="16,14,16,16"
+                            HorizontalAlignment="Right" Click="OkButton_Click"
+                            AutomationProperties.Name="Close About ConnectOnion" />
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,265 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>ConnectOnion.WinUIClient</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app-icon.ico</ApplicationIcon>
+    <Platforms>x86;x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+    <PublishProfile>win-$(Platform).pubxml</PublishProfile>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <WindowsPackageType Condition="'$(RunUnpackaged)' == 'true'">None</WindowsPackageType>
+    <Nullable>enable</Nullable>
+
+    <!-- A custom entry point (Program.cs) enforces single-instance: a second launch
+         redirects to the running instance and exits before WinUI ever starts, so no
+         second window/Application can be constructed. -->
+    <DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Platform)' == 'AnyCPU' or '$(Platform)' == 'Any CPU'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishProfile>win-x64.pubxml</PublishProfile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\SplashScreen.scale-200.png" />
+    <Content Include="Assets\LockScreenLogo.scale-200.png" />
+    <Content Include="Assets\Square150x150Logo.scale-100.png" />
+    <Content Include="Assets\Square150x150Logo.scale-200.png" />
+    <Content Include="Assets\Square150x150Logo.scale-400.png" />
+    <Content Include="Assets\Square44x44Logo.scale-100.png" />
+    <Content Include="Assets\Square44x44Logo.scale-200.png" />
+    <Content Include="Assets\Square44x44Logo.scale-400.png" />
+    <Content Include="Assets\Square44x44Logo.targetsize-16_altform-unplated.png" />
+    <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
+    <Content Include="Assets\Square44x44Logo.targetsize-32_altform-unplated.png" />
+    <Content Include="Assets\Square44x44Logo.targetsize-48_altform-unplated.png" />
+    <Content Include="Assets\Square44x44Logo.targetsize-256_altform-unplated.png" />
+    <Content Include="Assets\StoreLogo.png" />
+    <Content Include="Assets\StoreLogo.scale-200.png" />
+    <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Content Include="Assets\app-icon.ico" />
+    <Content Include="Assets\icon.ico" />
+    <Content Include="Assets\icon.png" />
+    <Content Include="Assets\Fonts\JetBrainsMonoNerdFontMono-Regular.ttf" />
+    <Content Include="Assets\Fonts\JetBrainsMonoNerdFontMono-Italic.ttf" />
+    <Content Include="Assets\Fonts\JetBrainsMonoNerdFontMono-Bold.ttf" />
+    <Content Include="Assets\Fonts\JetBrainsMonoNerdFontMono-BoldItalic.ttf" />
+    <Content Include="Assets\Fonts\OFL.txt" />
+    <Content Include="..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- Unpackaged publish does not automatically carry loose MSIX assets. Window/tray icons
+       and the About logo resolve from AppContext.BaseDirectory, so keep the same Assets tree. -->
+  <ItemGroup>
+    <Content Update="Assets\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+
+  <!--
+    Defining the "Msix" ProjectCapability here allows the Single-project MSIX Packaging
+    Tools extension to be activated for this project even if the Windows App SDK Nuget
+    package has not yet been restored.
+  -->
+  <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
+    <ProjectCapability Include="Msix" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="CommunityToolkit.WinUI.Animations" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+    <PackageReference Include="FluentIcons.WinUI" />
+    <PackageReference Include="H.NotifyIcon.WinUI" />
+    <PackageReference Include="Markdig" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+    <PackageReference Include="Microsoft.Graphics.Win2D" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="QRCoder" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Sinks.Async" />
+    <PackageReference Include="Serilog.Sinks.File" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ConnectOnion.Protocol\ConnectOnion.Protocol.csproj" />
+    <ProjectReference Include="..\ConnectOnion.WinUIClient.Core\ConnectOnion.WinUIClient.Core.csproj" />
+  </ItemGroup>
+
+  <!--
+    Windows App SDK 2.3.1's self-contained payload omits this native resource DLL from its
+    runtimes-framework folders even though AppNotificationManager.Register loads it. The file is
+    present in the Runtime NuGet package's framework MSIX, so extract that Microsoft-supplied
+    payload during self-contained builds instead of checking a binary copy into this repository.
+
+    Without it an unpackaged publish reports AppNotificationManager.IsSupported() == true and
+    then fails Register() with 0x8007007E (ERROR_MOD_NOT_FOUND), leaving system notifications
+    disabled. Keep this workaround until the SDK ships the file as a normal self-contained asset.
+  -->
+  <UsingTask TaskName="ExtractWindowsAppSdkZipEntry"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <SourceArchive ParameterType="System.String" Required="true" />
+      <EntryName ParameterType="System.String" Required="true" />
+      <DestinationFile ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.IO.Compression" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        var destinationDirectory = Path.GetDirectoryName(DestinationFile);
+        if (!string.IsNullOrEmpty(destinationDirectory))
+        {
+            Directory.CreateDirectory(destinationDirectory);
+        }
+
+        using (var archiveStream = File.OpenRead(SourceArchive))
+        using (var archive = new ZipArchive(archiveStream, ZipArchiveMode.Read))
+        {
+            var entry = archive.GetEntry(EntryName);
+            if (entry == null)
+            {
+                Log.LogError("Windows App SDK payload '{0}' does not contain '{1}'.", SourceArchive, EntryName);
+                return false;
+            }
+
+            using (var source = entry.Open())
+            using (var destination = File.Create(DestinationFile))
+            {
+                source.CopyTo(destination);
+            }
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="ExtractWindowsAppSdkNotificationResource"
+          Condition="'$(WindowsAppSDKSelfContained)' == 'true'"
+          DependsOnTargets="GetWindowsAppSDKNativePlatform">
+    <PropertyGroup>
+      <_WindowsAppSdkNotificationResourceArchive>$(MicrosoftWindowsAppSDKPackageDir)tools\MSIX\win10-$(NativePlatform)\Microsoft.WindowsAppRuntime.2.msix</_WindowsAppSdkNotificationResourceArchive>
+      <_WindowsAppSdkNotificationResourceFile>$(SelfContainedIntermediateOutputPath)NotificationResources\Microsoft.WindowsAppRuntime.Insights.Resource.dll</_WindowsAppSdkNotificationResourceFile>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(_WindowsAppSdkNotificationResourceArchive)')"
+           Text="Windows App SDK notification resource archive was not found: $(_WindowsAppSdkNotificationResourceArchive)" />
+    <ExtractWindowsAppSdkZipEntry
+        SourceArchive="$(_WindowsAppSdkNotificationResourceArchive)"
+        EntryName="Microsoft.WindowsAppRuntime.Insights.Resource.dll"
+        DestinationFile="$(_WindowsAppSdkNotificationResourceFile)" />
+  </Target>
+
+  <Target Name="AddWindowsAppSdkNotificationResource"
+          Condition="'$(WindowsAppSDKSelfContained)' == 'true'"
+          BeforeTargets="AssignTargetPaths;CoreCompile"
+          DependsOnTargets="ExtractWindowsAppSdkNotificationResource">
+    <Error Condition="!Exists('$(_WindowsAppSdkNotificationResourceFile)')"
+           Text="Windows App SDK notification resource was not extracted: $(_WindowsAppSdkNotificationResourceFile)" />
+    <ItemGroup>
+      <None Include="$(_WindowsAppSdkNotificationResourceFile)"
+            Link="Microsoft.WindowsAppRuntime.Insights.Resource.dll"
+            CopyToOutputDirectory="PreserveNewest"
+            CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
+    Explorer "Package and Publish" context menu entry to be enabled for this project even if
+    the Windows App SDK Nuget package has not yet been restored.
+  -->
+  <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
+    <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
+  </PropertyGroup>
+
+  <!-- Publish Properties -->
+  <PropertyGroup>
+    <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
+
+    <!--
+      Dynamic PGO. Complements ReadyToRun rather than competing with it: R2R code starts fast but
+      is compiled without knowledge of what this app actually does, and TieredPGO lets the hot
+      paths be re-jitted against real profile data. Off by default for R2R-compiled code unless
+      this is set, which is exactly the configuration this project ships.
+    -->
+    <TieredPGO>true</TieredPGO>
+
+    <!--
+      InvariantGlobalization is deliberately NOT set, and must not be.
+
+      It is the usual companion to these settings and it would break this app in three places:
+      the zh-CN locale, `CultureInfo.GetCultureInfo` in Common/LayoutDirection (which decides
+      right-to-left layout and would start throwing CultureNotFoundException), and every
+      `CultureInfo.CurrentCulture` format — message timestamps, token counts, the payment amount
+      on an onboarding card. The wins here are not worth a client that formats a transfer amount
+      with the wrong decimal separator.
+    -->
+
+    <!--
+      Debug stays untrimmed and always will: trimming only affects `publish`, and paying its cost
+      on the inner loop would buy nothing. It is declared rather than left to default so the two
+      configurations sit next to each other and neither can be changed by accident.
+    -->
+    <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
+    <!--
+      LOAD-BEARING. Not a leftover default.
+
+      Trimming sets JsonSerializerIsReflectionEnabledByDefault=false, which turns every
+      reflection-based JsonSerializer call into a runtime failure rather than a risk. The
+      2026-07-25 release audit found exactly that: a Tool Activity timeline that restored empty in
+      Release and worked perfectly in Debug.
+
+      Enabled 2026-08-05 against the evidence in docs/TRIMMING.md, which is the gate — read it
+      before changing this. In short: 0 app-owned IL warnings; the serialization paths are
+      source-generated and a trimmed console harness proves them across a real process restart; the
+      trimmed *app* renders a turn written by that harness (tool-activity steps, arguments, results
+      and the interactive cards); the required shell/chat suite passes 36/36 against the trimmed executable; and
+      the latest staged portable ZIP audits clean at 73.22 MB against a 71.29 MB trimmed baseline with
+      no key operation regressing more than +2.9%.
+
+      What is NOT proved is the MSIX path, because this repo does not build one — the release
+      workflow ships a self-contained portable ZIP. That is the only distribution channel this
+      setting affects today, and it is the one that was validated. If MSIX publishing is ever
+      restored, run the functional matrix against a trimmed package before shipping it.
+
+      tests/ConnectOnion.WinUIClient.UnitTests/Architecture/TrimmingGateTests.cs pins this, so
+      changing it back is also a decision rather than an edit.
+    -->
+    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+    <!--
+      Local packaging is deliberately unsigned. A PackageCertificateThumbprint resolves against
+      the building machine's certificate store, so a committed thumbprint fails every clone but
+      the one machine that happens to hold that certificate. Nothing in the pipeline needs it:
+      the release workflow ships a self-contained portable ZIP, not an MSIX, and
+      PackageIdentityTests asserts signtool and the signing secrets stay out of it.
+
+      Developer-mode F5/Deploy still works — it registers the loose layout rather than installing
+      a package, which does not check a signature. Only an actual .msix install does, so if you
+      ever need one (scripts\Test-ReleaseUpgrade.ps1), sign it out of band: create a certificate
+      whose subject is byte-for-byte Package.appxmanifest's Publisher (CN=ConnectOnion) and pass
+      -p:AppxPackageSigningEnabled=true -p:PackageCertificateThumbprint=... on that build only.
+    -->
+    <AppxPackageSigningEnabled>False</AppxPackageSigningEnabled>
+    <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
+    <GenerateTestArtifacts>False</GenerateTestArtifacts>
+    <AppxBundle>Never</AppxBundle>
+    <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+  </PropertyGroup>
+</Project>

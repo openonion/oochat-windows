@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>ConnectOnion.Protocol</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The BIP39 English wordlist, embedded so a recovery phrase can be decoded with no file
+         deployment. Resource name is RootNamespace + file name: ConnectOnion.Protocol.Bip39EnglishWordlist.txt
+         (Bip39.LoadWordlist depends on that exact string). -->
+    <EmbeddedResource Include="Bip39EnglishWordlist.txt" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,590 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="ConnectOnion.WinUIClient.Controls.ToolActivityView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ic="using:FluentIcons.WinUI"
+    xmlns:controls="using:ConnectOnion.WinUIClient.Controls"
+    xmlns:common="using:ConnectOnion.WinUIClient.Common"
+    xmlns:models="using:ConnectOnion.WinUIClient.Models">
+
+    <UserControl.Resources>
+        <common:ToolActivityTextConverter x:Key="ToolActivityText" />
+        <!-- Disclosure rows keep their foreground/icon-only hover in code-behind. Standalone
+             toolbar text actions use TextActionButtonStyle so their target is visible at rest. -->
+
+        <!-- Low-weight text buttons for the per-step log toolbar (Wrap / Copy / Expand). -->
+        <Style x:Key="LogToolbarButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource TextActionButtonStyle}">
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="8,3" />
+            <Setter Property="MinHeight" Value="40" />
+            <Setter Property="FontSize" Value="{StaticResource ProductMicroFontSize}" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid MaxWidth="{x:Bind Activity.PresentationMaxWidth, Mode=OneWay}"
+          HorizontalAlignment="Stretch"
+          Visibility="{x:Bind Activity.IsVisible, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+        <Grid.ChildrenTransitions>
+            <TransitionCollection>
+                <EntranceThemeTransition />
+            </TransitionCollection>
+        </Grid.ChildrenTransitions>
+
+        <!-- One grouping container for every tool card, single-step or multi. A subtle,
+             hairline-bordered surface — very light neutral fill, 1px subtle stroke, no shadow — so
+             both a run of steps AND a lone tool call read as a card rather than loose text on the
+             transcript, sharing the same design tokens (Compact Tool Card == Tool Activity, minus
+             the aggregate header, which stays gated on ShowCardChrome below). Unconditional now:
+             the single-step case used to drop the chrome and sit flush on the transcript, but a
+             lone call floating on the page was exactly the "loose plain text" problem. -->
+        <!-- Vertical padding compensates for the step row's own asymmetric margin. Multi-step
+             keeps 8/8 around its header and completion marker; the compact single-step variant
+             removes its own bottom inset because the row already contributes the final 8px. -->
+        <!-- An outline card, not a filled one. The fill used to be SurfaceSecondaryBrush — a solid
+             light-grey slab that sat heavier on the transcript than the agent's own reply below it
+             (the large grey slab this pass set out to remove). Sitting the background on the chat
+             background instead leaves only the 1px stroke to say "this is one grouped thing", which
+             is all the separation a de-emphasised activity block needs. BorderDefault rather than
+             the fainter BorderSubtle precisely because there is no fill behind it now: in dark mode
+             a subtle stroke on an identical-coloured background would vanish, and the card with it. -->
+        <Border CornerRadius="8"
+                Background="Transparent"
+                BorderBrush="{ThemeResource BorderDefaultBrush}"
+                BorderThickness="1"
+                Padding="{x:Bind Activity.ShowCardChrome, Mode=OneWay, Converter={StaticResource BoolToThickness}, ConverterParameter='12,8,12,8|12,6,12,0'}">
+        <!-- No Spacing on this panel: StackPanel reserves it between child *slots*, including
+             collapsed ones, so a folded card paid 5px for the hidden timeline and another 5px
+             for the hidden error line — a blank strip under the header with nothing in it. The
+             gaps live on the children's own margins instead, which a collapsed element does not
+             contribute. -->
+        <StackPanel>
+            <!-- Header row. Gone when the turn ran exactly one tool: the step below says
+                 everything this row would have summarised, and the disclosure it carries has
+                 nothing left to disclose. -->
+            <Button MinHeight="40"
+                    AutomationProperties.AutomationId="ToolActivityHeaderButton"
+                    Visibility="{x:Bind Activity.ShowCardChrome, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                    Padding="0,2"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    Style="{StaticResource TransparentButtonStyle}"
+                    Click="Header_Click"
+                    PointerEntered="Header_PointerEntered"
+                    PointerExited="Header_PointerExited"
+                    AutomationProperties.Name="{x:Bind Activity.AccessibilityName, Mode=OneWay}">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <ic:FluentIcon Grid.Column="0"
+                                   Icon="{x:Bind Activity.HeaderIconKind, Mode=OneWay, Converter={StaticResource ToolIcon}}"
+                                   IconVariant="Regular"
+                                   IconSize="Size16"
+                                   VerticalAlignment="Center"
+                                   Foreground="{ThemeResource TextTertiaryBrush}" />
+
+                    <TextBlock x:Name="HeaderTitle"
+                               Grid.Column="1"
+                               Text="{x:Bind Activity.HeaderTitle, Mode=OneWay, Converter={StaticResource ToolActivityText}}"
+                               FontSize="{x:Bind FontSize, Mode=OneWay}"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource TextTertiaryBrush}"
+                               VerticalAlignment="Center" />
+
+                    <Border Grid.Column="2"
+                            Padding="8,3"
+                            CornerRadius="6"
+                            Background="{ThemeResource AttentionSubtleBrush}"
+                            Visibility="{x:Bind Activity.IsAwaitingApproval, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                            <TextBlock x:Uid="ToolApprovalRequired" Text="Approval required"
+                                   FontSize="{x:Bind FontSize, Mode=OneWay}"
+                                   FontWeight="SemiBold"
+                                   Foreground="{ThemeResource AttentionBrush}"
+                                   AutomationProperties.Name="Approval required" />
+                    </Border>
+
+                    <TextBlock Grid.Column="4"
+                               Text="{x:Bind Activity.Summary, Mode=OneWay, Converter={StaticResource ToolActivityText}}"
+                               MaxWidth="500"
+                               FontSize="{x:Bind FontSize, Mode=OneWay}"
+                               Foreground="{x:Bind Activity.Status, Mode=OneWay, Converter={StaticResource ToolStatusToBrush}, ConverterParameter='danger-only:TextTertiaryBrush'}"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center"
+                               Visibility="{x:Bind Activity.HasApproval, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+
+                    <!-- Same slot as Summary, which is blank while an approval is embedded. The
+                         decision folds the timeline (see ToolActivityProjector.ApplyAutoExpansion),
+                         so without this the card would give no sign that the turn had already run
+                         anything before it stopped. -->
+                    <TextBlock Grid.Column="4"
+                               Text="{x:Bind Activity.CollapsedStepCountHint, Mode=OneWay, Converter={StaticResource ToolActivityText}}"
+                               FontSize="{x:Bind FontSize, Mode=OneWay}"
+                               Foreground="{ThemeResource TextTertiaryBrush}"
+                               VerticalAlignment="Center"
+                               Visibility="{x:Bind Activity.ShowCollapsedStepCount, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+
+                    <ic:FluentIcon x:Name="HeaderChevron"
+                                   Grid.Column="5"
+                                   Icon="ChevronDown"
+                                   IconVariant="Regular"
+                                   IconSize="Size12"
+                                   VerticalAlignment="Center"
+                                   Opacity="0.75"
+                                   Foreground="{ThemeResource TextTertiaryBrush}"
+                                   RenderTransformOrigin="0.5,0.5">
+                        <ic:FluentIcon.RenderTransform>
+                            <RotateTransform Angle="{x:Bind Activity.ChevronAngle, Mode=OneWay}" />
+                        </ic:FluentIcon.RenderTransform>
+                    </ic:FluentIcon>
+                </Grid>
+            </Button>
+
+            <!-- Collapsed-only failure line. A folded card otherwise reports that something went
+                 wrong without saying what ("Tool execution completed · 1 steps had issues"), so
+                 the user has to open it to find out whether it mattered. Hidden once expanded —
+                 the failed step prints the same text in full down in its Error block. -->
+            <TextBlock Text="{x:Bind Activity.LastErrorMessage, Mode=OneWay}"
+                       Visibility="{x:Bind Activity.ShowCollapsedError, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                       Margin="0,1,0,3"
+                       FontSize="{x:Bind FontSize, Mode=OneWay}"
+                       Foreground="{ThemeResource DangerBrush}"
+                       TextTrimming="CharacterEllipsis"
+                       IsTextSelectionEnabled="True" />
+
+            <!-- Timeline panel. Named because Header_Click hands it to the disclosure animation
+                 explicitly: DisclosureAnimation.FindContentAfter would take the header's first
+                 sibling, which is the collapsed error line above. -->
+            <!-- The 9px indent sets the timeline in under its header. With no header — the single
+                 step case — there is nothing to sit under, and the inset would leave the row
+                 hanging a few pixels right of every other bubble in the transcript, so it goes to
+                 zero and the step starts on the chat column's left edge like any other message. -->
+            <Grid x:Name="TimelinePanel"
+                  Margin="{x:Bind Activity.ShowCardChrome, Mode=OneWay, Converter={StaticResource BoolToThickness}, ConverterParameter='9,5,0,0|0,0,0,0'}"
+                  Visibility="{x:Bind Activity.IsTimelineVisible, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                <!-- The connecting rule is what makes a list of steps read as a timeline. One
+                     step is not a timeline, so it draws no thread. -->
+                <!-- A thread, not a rule: the card outline is BorderDefault, so the timeline drops
+                     to the fainter BorderSubtle to stay a background hint rather than competing with
+                     the frame around it. -->
+                <Border Width="1"
+                        Visibility="{x:Bind Activity.ShowCardChrome, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                        Background="{ThemeResource BorderSubtleBrush}"
+                        HorizontalAlignment="Left"
+                        Margin="10,10,0,12" />
+
+                <StackPanel>
+                    <!-- ItemsControl, deliberately non-virtualizing: it realizes every step row up
+                         front, so the card's height is settled the moment it is measured. A
+                         virtualizing host (ItemsRepeater) realizes rows lazily against the viewport,
+                         so a card scrolled past would grow as its rows came in and shove the whole
+                         transcript — the scroll-jitter this replaced. The step count per card is
+                         tiny, so full realization costs nothing. -->
+                    <!-- The item template uses compiled {x:Bind}. It was converted to classic
+                         {Binding} in 097768b on the grounds that "the non-virtualizing host leaks
+                         ToolStepViewModel roots", and that turns out not to be true, so it has been
+                         converted back.
+
+                         What the generated code actually does (ToolActivityView.g.cs,
+                         ToolActivityView_obj*_Bindings): the step keeps a strong reference only to
+                         a small BindingsTracking object, which holds the Bindings object by
+                         WeakReference, which holds the template root by WeakReference.
+                         TryGetBindingObject unsubscribes PropertyChanged once the bindings object
+                         is collected. So a long-lived ToolStepViewModel — one parked in
+                         ConversationCache — has no strong path to an orphaned row and cannot keep
+                         it alive. The grain of truth in the old claim is only that a
+                         non-virtualizing host never calls Recycle(), so those tracking objects are
+                         released lazily rather than at recycle time: bounded and self-healing, not
+                         a retained UI tree. The "re-entering a session keeps growing memory"
+                         symptom it cited was separately diagnosed in
+                         docs/MEMORY_LEAK_INVESTIGATION.md, whose root causes are the Win2D
+                         waveform, native document retention in the Markdown/highlighted/tool-result
+                         controls, and detached pages — this template is not among them.
+
+                         Two things a future change here must keep:
+
+                         Every binding carries an explicit Mode. {Binding} defaults to OneWay but
+                         {x:Bind} defaults to OneTime, and nearly every property below is an
+                         [ObservableProperty] or derived from one — a missing Mode silently freezes
+                         that binding at its first value, which for a streaming log or a status
+                         colour looks like nothing at all until someone notices it never updates.
+
+                         Nothing here may read sender.DataContext. A row's DataContext is only
+                         assigned when its template carries no compiled binding, so with x:Bind it
+                         is null; every handler in this file therefore reads Tag (see the Tag
+                         bindings below, and the remark on Log_SizeChanged). Getting this wrong is
+                         what cost the sidebar its hover state. -->
+
+                    <!-- Why the host itself stays non-virtualizing is a separate, still-valid
+                         argument: see the height/jitter note above. It is bounded in practice —
+                         this card only exists inside a realized ChatPage ListView row, and the
+                         observed step count on a real profile is a median of 2 and a maximum of 15.
+                         If a turn ever produces hundreds of steps, cap Steps or page it; that is
+                         the lever, not the container type. -->
+                    <ItemsControl ItemsSource="{x:Bind Activity.Steps, Mode=OneWay}"
+                                  Margin="0,2,4,0">
+                        <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:ToolStepViewModel">
+                            <Grid x:Name="StepItemRoot"
+                                  Margin="0,2,0,8"
+                                  ColumnSpacing="12"
+                                  PointerEntered="StepItem_PointerEntered"
+                                  PointerExited="StepItem_PointerExited">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="21" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- The timeline node identifies the tool, and its colour reports
+                                     how the step went: red failed, amber needs attention, grey
+                                     otherwise. Shape says what ran, colour says how it went — one
+                                     node answering both, rather than the ✓/✕ glyph that could only
+                                     answer the second. The glyph still reaches screen readers
+                                     through the step's AccessibilityName, built from StatusGlyph.
+
+                                     "muted-success", so a run of successful steps stays quiet grey
+                                     instead of a column of green: success is the expected outcome
+                                     and colour is worth more when it is reserved for the rows that
+                                     actually want attention. -->
+                                <Border Width="21"
+                                        Height="21"
+                                        CornerRadius="10.5"
+                                        Background="{ThemeResource ChatBackgroundBrush}"
+                                        VerticalAlignment="Top">
+                                    <!-- Size16 scaled to 12 — the repo idiom, and mandatory here:
+                                         Globe, Database, Screenshot and WindowDevTools ship no
+                                         Size12 design and would render as a silent blank. The
+                                         16px layout slot still fits inside the 21px node. -->
+                                    <ic:FluentIcon Icon="{x:Bind IconKind, Mode=OneTime, Converter={StaticResource ToolIcon}}"
+                                                   IconVariant="Regular"
+                                                   IconSize="Size16"
+                                                   RenderTransformOrigin="0.5,0.5"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{x:Bind Status, Mode=OneWay, Converter={StaticResource ToolStatusToBrush}, ConverterParameter=muted-success}">
+                                        <ic:FluentIcon.RenderTransform>
+                                            <ScaleTransform ScaleX="0.75" ScaleY="0.75" />
+                                        </ic:FluentIcon.RenderTransform>
+                                    </ic:FluentIcon>
+                                </Border>
+
+                                <StackPanel Grid.Column="1"
+                                            Spacing="4">
+                                    <!-- Step header -->
+                                    <Button MinHeight="0"
+                                            Padding="0,2,0,4"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            CornerRadius="4"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Stretch"
+                                            Style="{StaticResource TransparentButtonStyle}"
+                                            Click="Step_Click"
+                                            Tag="{x:Bind}"
+                                            AutomationProperties.Name="{x:Bind AccessibilityName, Mode=OneWay}">
+                                        <!-- Two columns: name/target, then duration. Individual
+                                             tool rows stay icon-free; the enclosing multi-step
+                                             card owns the disclosure affordance. -->
+                                        <Grid ColumnSpacing="6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Spacing="1">
+                                                <TextBlock x:Name="StepNameText"
+                                                           Text="{x:Bind DisplayLabel, Mode=OneWay}"
+                                                           FontSize="{StaticResource ProductBodyFontSize}"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{x:Bind Status, Mode=OneWay, Converter={StaticResource ToolStatusToBrush}, ConverterParameter=danger-only}"
+                                                           TextTrimming="CharacterEllipsis" />
+
+                                                <!-- What the tool was actually given: the shell
+                                                     command, the search pattern, the URL. The row
+                                                     used to name the tool and its result and
+                                                     nothing in between, so "Run command · 240 ms"
+                                                     never revealed which command ran — the one
+                                                     fact worth reading at a glance.
+
+                                                     Monospace and single-line: this is a value,
+                                                     not prose, and the row must stay one scan
+                                                     height whatever the agent passed. The full
+                                                     text (plus any second line) is in the expanded
+                                                     block below. The '$' prefix comes from the
+                                                     model, so only a real shell command gets a
+                                                     shell sigil. -->
+                                                <!-- Spacing, not a trailing space in the prefix
+                                                     string: XAML collapses whitespace between
+                                                     adjacent inlines, so a padded string rendered
+                                                     as "$rm". -->
+                                                <StackPanel Orientation="Horizontal"
+                                                            Spacing="5"
+                                                            Visibility="{x:Bind ShowInlineInvocation, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                                                    <TextBlock Text="{x:Bind InvocationPrefix, Mode=OneWay}"
+                                                               FontSize="{StaticResource ProductCodeFontSize}"
+                                                               FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                                                               Foreground="{ThemeResource TextTertiaryBrush}" />
+                                                    <TextBlock Text="{x:Bind InvocationText, Mode=OneWay}"
+                                                               FontSize="{StaticResource ProductCodeFontSize}"
+                                                               FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                                                               Foreground="{ThemeResource TextSecondaryBrush}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               TextWrapping="NoWrap" />
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <!-- Right-aligned so the column never shifts the name,
+                                                 but held at low opacity at rest: a per-step "13 ms"
+                                                 is reference detail, not something to scan down the
+                                                 whole timeline. StepItem_PointerEntered lifts just
+                                                 the hovered row's figure back to full strength. -->
+                                            <TextBlock x:Name="StepDurationText"
+                                                       Grid.Column="1"
+                                                       Text="{x:Bind DurationLabel, Mode=OneWay}"
+                                                       FontSize="{StaticResource ProductMicroFontSize}"
+                                                       Opacity="0.5"
+                                                       Foreground="{ThemeResource TextTertiaryBrush}"
+                                                       VerticalAlignment="Top"
+                                                       Margin="12,2,0,0" />
+
+                                        </Grid>
+                                    </Button>
+
+                                    <!-- Per-step expanded content: an output toolbar over a themed,
+                                         height-capped log region. Only the log scrolls internally;
+                                         the toolbar and the step header above it stay put.
+
+                                         One output block, not a Result card plus an Error card — a
+                                         failed step carries the same text in both fields, so two
+                                         cards printed the same message twice. Status drives the
+                                         heading colour (DangerBrush when failed) via
+                                         ToolStatusToBrushConverter and DetailLabel switches the word.
+                                         (The step's Input/Arguments are still captured and persisted
+                                         but deliberately not rendered — see the model comments.) -->
+                                    <!-- x:Load, not Visibility, and this is the point of moving the
+                                         template to x:Bind at all (x:Load accepts no other binding
+                                         kind). A collapsed element is still constructed, so every
+                                         step row was building this whole block — including a
+                                         ToolResultTextBlock and a MarkdownTextBlock, the two
+                                         controls docs/MEMORY_LEAK_INVESTIGATION.md names for
+                                         retaining native document trees — to keep it hidden. Steps
+                                         start collapsed and most are never opened. -->
+                                    <StackPanel x:Name="StepDetail"
+                                                x:Load="{x:Bind IsExpanded, Mode=OneWay}"
+                                                Spacing="6">
+                                        <!-- The invocation in full, above the output it produced.
+                                             The collapsed row shows one trimmed line of this; here
+                                             it wraps, so a long command or prompt is readable
+                                             rather than cut off. Labelled by kind ("Command",
+                                             "Pattern", "URL", "Task") because a bare monospace
+                                             block over a result block would read as two outputs. -->
+                                        <StackPanel Spacing="4"
+                                                    Visibility="{x:Bind HasInvocation, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                                            <Grid ColumnSpacing="8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{x:Bind InvocationLabel, Mode=OneWay, Converter={StaticResource ToolActivityText}}"
+                                                           FontSize="{StaticResource ProductCaptionFontSize}"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{ThemeResource TextSecondaryBrush}" />
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+                                                    <Button x:Uid="ToolOpen"
+                                                            Style="{StaticResource LogToolbarButtonStyle}"
+                                                            Content="Open"
+                                                            Tag="{x:Bind}"
+                                                            Click="InvocationOpen_Click"
+                                                            Visibility="{x:Bind CanOpenInvocation, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                                                            AutomationProperties.Name="Open tool URL"
+                                                            ToolTipService.ToolTip="Open this URL in the default browser" />
+                                                    <Button x:Uid="ToolActivityCopyInput" Style="{StaticResource LogToolbarButtonStyle}"
+                                                            Content="{x:Bind CopyInvocationLabel, Mode=OneWay, Converter={StaticResource ToolActivityText}}"
+                                                            Tag="{x:Bind}"
+                                                            Click="InvocationCopy_Click"
+                                                            AutomationProperties.Name="Copy tool input"
+                                                            ToolTipService.ToolTip="Copy the full command, target, path, or query" />
+                                                </StackPanel>
+                                            </Grid>
+                                            <Border Background="{ThemeResource CodeBackgroundBrush}"
+                                                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="8"
+                                                    Padding="12,10">
+                                                <StackPanel Spacing="4">
+                                                    <!-- One TextBlock over prefix + text as a single
+                                                         string. Two Runs would let the prefix be
+                                                         dimmed separately, but XAML collapses the
+                                                         whitespace between them and there is no
+                                                         Spacing on inlines to put it back. -->
+                                                    <TextBlock Text="{x:Bind InvocationDisplayText, Mode=OneWay}"
+                                                               FontSize="{StaticResource ProductCodeFontSize}"
+                                                               FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                                                               IsTextSelectionEnabled="True"
+                                                               TextWrapping="Wrap" />
+                                                    <!-- The second line is context, not payload: a
+                                                         search's directory, a delegated task's full
+                                                         prompt. Held one step back so it never
+                                                         competes with the value above it. -->
+                                                    <TextBlock Text="{x:Bind InvocationSecondary, Mode=OneWay}"
+                                                               FontSize="{StaticResource ProductCodeFontSize}"
+                                                               FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                                                               Foreground="{ThemeResource TextTertiaryBrush}"
+                                                               IsTextSelectionEnabled="True"
+                                                               TextWrapping="Wrap"
+                                                               Visibility="{x:Bind HasInvocationSecondary, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+
+                                        <!-- Toolbar: heading left, low-weight Wrap / Copy / Expand right. -->
+                                        <Grid ColumnSpacing="4"
+                                              Visibility="{x:Bind HasDetail, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{x:Bind DetailLabel, Mode=OneWay, Converter={StaticResource ToolActivityText}}"
+                                                       FontSize="{StaticResource ProductCaptionFontSize}"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{x:Bind Status, Mode=OneWay, Converter={StaticResource ToolStatusToBrush}}" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+                                                <Button x:Uid="ToolActivityCopyLog" Style="{StaticResource LogToolbarButtonStyle}"
+                                                        Content="{x:Bind CopyLabel, Mode=OneWay, Converter={StaticResource ToolActivityText}}"
+                                                        Tag="{x:Bind}"
+                                                        Click="LogCopy_Click"
+                                                        AutomationProperties.Name="Copy log"
+                                                        ToolTipService.ToolTip="Copy the full log" />
+                                                <Button x:Uid="ToolActivityResizeLog" Style="{StaticResource LogToolbarButtonStyle}"
+                                                        Content="{x:Bind EnlargeLabel, Mode=OneWay, Converter={StaticResource ToolActivityText}}"
+                                                        Command="{x:Bind ToggleLogSizeCommand, Mode=OneWay}"
+                                                        Visibility="{x:Bind ShowEnlargeButton, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                                                        AutomationProperties.Name="Enlarge or restore log area"
+                                                        ToolTipService.ToolTip="Enlarge or restore the log area" />
+                                            </StackPanel>
+                                        </Grid>
+                                        <!-- Log region: a single themed monospace surface (a subtle
+                                             code background + hairline stroke, no white-inner-on-grey
+                                             nesting), height-capped with internal vertical scroll.
+                                             The log always wraps, so it never scrolls sideways. -->
+                                        <Border Background="{ThemeResource CodeBackgroundBrush}"
+                                                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="8"
+                                                Padding="12"
+                                                Visibility="{x:Bind RendersDetailAsLog, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                                            <ScrollViewer MaxHeight="{x:Bind LogMaxHeight, Mode=OneWay}"
+                                                          VerticalScrollBarVisibility="Auto"
+                                                          HorizontalScrollBarVisibility="Disabled"
+                                                          HorizontalScrollMode="Disabled"
+                                                          IsVerticalScrollChainingEnabled="True"
+                                                          IsTabStop="False">
+                                                <controls:ToolResultTextBlock
+                                                    Text="{x:Bind DetailText, Mode=OneWay}"
+                                                    Tag="{x:Bind}"
+                                                    SizeChanged="Log_SizeChanged" />
+                                            </ScrollViewer>
+                                        </Border>
+
+                                        <!-- Documentation, not program output. A guide's result is
+                                             markdown written to be read, and the monospace log
+                                             block above renders its headings and lists as literal
+                                             '#' and '-'. Which block appears is the tool's own
+                                             declaration (ToolInvocations.ProducesMarkdown), never a
+                                             guess from the text — a stack trace that happens to
+                                             start with '#' must stay a stack trace. A failed step
+                                             always takes the log branch for the same reason. -->
+                                        <Border Background="{ThemeResource SurfaceSecondaryBrush}"
+                                                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="8"
+                                                Padding="14,12"
+                                                Visibility="{x:Bind RendersDetailAsMarkdown, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                                            <ScrollViewer MaxHeight="{x:Bind LogMaxHeight, Mode=OneWay}"
+                                                          VerticalScrollBarVisibility="Auto"
+                                                          HorizontalScrollBarVisibility="Disabled"
+                                                          HorizontalScrollMode="Disabled"
+                                                          IsVerticalScrollChainingEnabled="True"
+                                                          IsTabStop="False">
+                                                <controls:MarkdownTextBlock
+                                                    Markdown="{x:Bind DetailText, Mode=OneWay}"
+                                                    Tag="{x:Bind}"
+                                                    SizeChanged="Log_SizeChanged" />
+                                            </ScrollViewer>
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Completion marker. Suppressed for a single step, whose own node already
+                         carries the outcome in exactly the same colour — a second "Done" row under
+                         a one-row card restates it. -->
+                    <Grid ColumnSpacing="10" Margin="0,0,4,0"
+                          Visibility="{x:Bind Activity.ShowCompletionMarker, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="21" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="21"
+                                Height="21"
+                                CornerRadius="10.5"
+                                Background="{ThemeResource ChatBackgroundBrush}">
+                            <!-- A FluentIcon, not the literal StatusGlyph character. "⚠" (U+26A0)
+                                 has emoji presentation on Windows: it renders through Segoe UI
+                                 Emoji in that font's own orange and ignores Foreground outright,
+                                 so the warning triangle could never be themed, muted, or turned
+                                 red like every other status. FluentIcons glyphs carry no colour of
+                                 their own, so this one takes the brush. StatusGlyph itself stays —
+                                 it is what AccessibilityName reads out. -->
+                            <ic:FluentIcon Icon="{x:Bind Activity.Status, Mode=OneWay, Converter={StaticResource ToolStatusToIcon}}"
+                                           IconVariant="Regular"
+                                           IconSize="Size16"
+                                           RenderTransformOrigin="0.5,0.5"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Foreground="{x:Bind Activity.Status, Mode=OneWay, Converter={StaticResource ToolStatusToBrush}}">
+                                <ic:FluentIcon.RenderTransform>
+                                    <ScaleTransform ScaleX="0.75" ScaleY="0.75" />
+                                </ic:FluentIcon.RenderTransform>
+                            </ic:FluentIcon>
+                        </Border>
+                        <!-- "Failed" turns red; "Done" and the waiting states stay prose-coloured,
+                             so the one word meaning something broke is the one that stands out. -->
+                        <TextBlock Grid.Column="1"
+                                   Text="{x:Bind Activity.CompletionLabel, Mode=OneWay, Converter={StaticResource ToolActivityText}}"
+                                   FontSize="{x:Bind FontSize, Mode=OneWay}"
+                                   VerticalAlignment="Center"
+                                   Foreground="{x:Bind Activity.Status, Mode=OneWay, Converter={StaticResource ToolStatusToBrush}, ConverterParameter=danger-only}" />
+                    </Grid>
+                </StackPanel>
+            </Grid>
+
+            <!-- No approval region here any more. approval_needed is its own transcript row
+                 (Controls/Chat/InteractiveCards/ApprovalCard.xaml) because this card is a
+                 turn-level aggregate anchored at the turn's FIRST tool call, while an approval
+                 arrives much later — so a turn that had also appended a plan, a question or a
+                 diff drew its live decision back up above all of them, mid-conversation.
+
+                 The link survives: ToolActivityViewModel.Approval is still set, which is what
+                 puts "Approval required" on this header and folds the timeline while the decision
+                 is open. It is a back-reference now, not a render host. -->
+        </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

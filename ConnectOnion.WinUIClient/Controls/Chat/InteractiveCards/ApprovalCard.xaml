@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl x:Class="ConnectOnion.WinUIClient.Controls.ApprovalCard" x:Name="Root"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ConnectOnion.WinUIClient.Controls"
+    xmlns:common="using:ConnectOnion.WinUIClient.Common"
+    xmlns:controls="using:ConnectOnion.WinUIClient.Controls"
+    xmlns:ic="using:FluentIcons.WinUI">
+    <UserControl.Resources>
+        <common:InteractiveTextConverter x:Key="InteractiveText" />
+    </UserControl.Resources>
+    <!-- An approval_needed decision, as a first-class transcript row.
+
+         It used to render inside the turn's tool-activity card. That card is a turn-level
+         aggregate anchored at the turn's FIRST tool call, while an approval is a moment that
+         arrives much later, so once the same turn had also appended a plan review, a question or
+         a couple of diff previews, the live decision was drawn back up above all of them —
+         stranded in the middle of the conversation with settled cards on either side, which is
+         exactly where a user stops knowing what is being asked of them.
+
+         Its own row puts it where it happened. Because the host blocks on io.receive() until the
+         user answers, "where it happened" is the end of the transcript, which is the same
+         guarantee ask_user and plan_review already had. The tool-activity card keeps
+         ToolActivityViewModel.Approval as a back-reference so its header can still read
+         "Waiting for approval" — it just no longer draws the decision.
+
+         Everything the decision needs is here: the tool, the command, the derived risk, and the
+         arguments behind "Operation details". The tool timeline above was never part of that,
+         which is why folding it while an approval is pending costs nothing. -->
+    <Grid>
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="WidthStates">
+                <VisualState x:Name="Narrow">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="ApprovalAuxActions.Orientation" Value="Vertical" />
+                        <Setter Target="ApprovalAuxActions.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="ApprovalDecisionActions.Orientation" Value="Vertical" />
+                        <Setter Target="ApprovalDecisionActions.HorizontalAlignment" Value="Stretch" />
+                        <!-- StopConfirmActions is deliberately absent: it lives inside the
+                             x:Load-deferred stop confirmation, and a VisualState Setter cannot
+                             target an element that may not be realized. -->
+                        <Setter Target="ExplainWhyButton.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="StopTaskButton.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="DeclineButton.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="AllowSessionButton.HorizontalAlignment" Value="Stretch" />
+                        <Setter Target="AllowOnceButton.HorizontalAlignment" Value="Stretch" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Wide">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="1000" />
+                    </VisualState.StateTriggers>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+        <local:InteractiveCard Message="{x:Bind Message, Mode=OneWay}"
+            IsExpanded="{x:Bind Message.IsInteractiveCardExpanded, Mode=TwoWay}"
+            IconGlyph="{x:Bind Message.ApprovalCardIconGlyph, Mode=OneWay}"
+            Title="{x:Bind Message.ApprovalCardTitle, Mode=OneWay, Converter={StaticResource InteractiveText}}"
+            Subtitle="{x:Bind Message.ApprovalCardSubtitle, Mode=OneWay, Converter={StaticResource InteractiveText}}"
+            StatusLabel="{x:Bind Message.ApprovalStatusLabel, Mode=OneWay}"
+            ShowStatusBadge="{x:Bind Message.ShowApprovalStatusBadge, Mode=OneWay}"
+            ShowBody="{x:Bind Message.ShowApprovalCardBody, Mode=OneWay}"
+            ShowFooter="{x:Bind Message.ShowApprovalCardBody, Mode=OneWay}"
+            IsCompact="{x:Bind Message.IsApprovalCardCompact, Mode=OneWay}"
+            ChromeTone="{x:Bind Message.ApprovalCardChromeTone, Mode=OneWay}"
+            IconTone="{x:Bind Message.ApprovalCardIconTone, Mode=OneWay}"
+            AccessibilityName="{x:Bind Message.ApprovalAccessibilityName, Mode=OneWay}">
+            <local:InteractiveCard.CardBody>
+                <Grid Padding="16,12" KeyDown="ApprovalRoot_KeyDown">
+                    <StackPanel Spacing="12"
+                                Visibility="{x:Bind Message.ShowApprovalRequestBody, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Spacing="3">
+                            <TextBlock Text="{x:Bind Message.ApprovalPromptTitle, Mode=OneWay}"
+                                       FontSize="{x:Bind FontSize, Mode=OneWay}" FontWeight="SemiBold"
+                                       Foreground="{ThemeResource TextPrimaryBrush}" TextWrapping="Wrap" />
+                            <TextBlock Text="{x:Bind Message.ApprovalPromptSubtitle, Mode=OneWay}"
+                                       FontSize="{x:Bind FontSize, Mode=OneWay}" Foreground="{ThemeResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap"
+                                       Visibility="{x:Bind Message.HasApprovalPromptSubtitle, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+
+                        <Border Padding="10,8" CornerRadius="7"
+                                Background="{ThemeResource CodeBackgroundBrush}"
+                                BorderBrush="{ThemeResource BorderSubtleBrush}" BorderThickness="1"
+                                Visibility="{x:Bind Message.HasApprovalCommand, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                            <StackPanel Spacing="6">
+                                <!-- CharacterEllipsis, not Clip. The disclosure button follows
+                                     TextBlock.IsTextTrimmed rather than guessing from character
+                                     count, so it appears exactly when MaxLines hides content. -->
+                                <TextBlock x:Name="ApprovalCommandTextBlock"
+                                           Text="{x:Bind Message.ApprovalCommandText, Mode=OneWay}"
+                                           FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCodeFontSize}" TextWrapping="Wrap"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxLines="{x:Bind Message.ApprovalCommandMaxLines, Mode=OneWay}"
+                                           IsTextSelectionEnabled="True"
+                                           IsTextTrimmedChanged="ApprovalCommandText_IsTextTrimmedChanged"
+                                           AutomationProperties.Name="{x:Bind Message.ApprovalCommandText, Mode=OneWay}" />
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="4">
+                                    <Button x:Uid="ToolCopyCommand" Content="Copy command"
+                                            Style="{StaticResource InteractiveCardTertiaryButtonStyle}"
+                                            IsEnabled="{x:Bind Message.AreApprovalRequestControlsEnabled, Mode=OneWay}"
+                                            Tag="{x:Bind Message, Mode=OneWay}"
+                                            Click="ApprovalCopyCommand_Click"
+                                            AutomationProperties.Name="Copy command"
+                                            ToolTipService.ToolTip="Copy the complete command" />
+                                    <Button x:Name="ApprovalCommandToggleButton"
+                                            AutomationProperties.AutomationId="ApprovalCommandToggleButton"
+                                            Content="{x:Bind Message.ApprovalCommandToggleLabel, Mode=OneWay}"
+                                            Style="{StaticResource InteractiveCardTertiaryButtonStyle}"
+                                            IsEnabled="{x:Bind Message.AreApprovalRequestControlsEnabled, Mode=OneWay}"
+                                            Command="{x:Bind Message.ToggleApprovalCommandCommand, Mode=OneWay}"
+                                            Visibility="Collapsed"
+                                            AutomationProperties.Name="{x:Bind Message.ApprovalCommandToggleLabel, Mode=OneWay}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Padding="10,7" CornerRadius="7" HorizontalAlignment="Left"
+                                Background="{ThemeResource SurfaceSecondaryBrush}"
+                                ToolTipService.ToolTip="{x:Bind Message.ApprovalTargetTooltip, Mode=OneWay}"
+                                Visibility="{x:Bind Message.ShowApprovalNonCommandTarget, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                            <StackPanel Orientation="Horizontal" Spacing="8" MaxWidth="560">
+                                <ic:FluentIcon Icon="{x:Bind Message.ApprovalTargetKind, Mode=OneWay, Converter={StaticResource ApprovalTargetIcon}}"
+                                               IconVariant="Regular" IconSize="Size16"
+                                               Foreground="{ThemeResource TextSecondaryBrush}" />
+                                <TextBlock Text="{x:Bind Message.ApprovalTargetText, Mode=OneWay}"
+                                           FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCodeFontSize}"
+                                           TextTrimming="CharacterEllipsis" IsTextSelectionEnabled="True" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- The risk line is derived from the command (CommandRiskAssessor), not
+                             asserted for every approval alike, so its colouring has to follow. A
+                             read-only command draws a green check and no alarm surface: painting
+                             `ls` amber is what taught users to click past the amber that matters. -->
+                        <Border Padding="10,8" CornerRadius="7"
+                                Background="{x:Bind Message.ApprovalRiskTone, Mode=OneWay, Converter={StaticResource InteractiveToneToBrush}, ConverterParameter=surface}">
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <ic:FluentIcon x:Uid="ToolRiskWarning"
+                                               Icon="{x:Bind Message.ApprovalRiskGlyph, Mode=OneWay, Converter={StaticResource IconName}}"
+                                               IconVariant="Regular" IconSize="Size16"
+                                               VerticalAlignment="Top"
+                                               Foreground="{x:Bind Message.ApprovalRiskTone, Mode=OneWay, Converter={StaticResource InteractiveToneToBrush}}"
+                                               AutomationProperties.Name="Risk warning" />
+                                <TextBlock Grid.Column="1"
+                                           Text="{x:Bind Message.ApprovalRiskText, Mode=OneWay}"
+                                           FontSize="{StaticResource ProductCaptionFontSize}" Foreground="{ThemeResource TextPrimaryBrush}"
+                                           TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                            </Grid>
+                        </Border>
+
+                        <TextBlock Text="{x:Bind Message.ApprovalBatchSummary, Mode=OneWay}"
+                                   FontSize="{StaticResource ProductCaptionFontSize}" Foreground="{ThemeResource AttentionBrush}"
+                                   TextWrapping="Wrap"
+                                   Visibility="{x:Bind Message.HasApprovalBatch, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+
+                        <StackPanel Spacing="6">
+                            <!-- A real button with a chevron, not a Padding="0" HyperlinkButton.
+                                 As bare text at the left margin it read as a section heading над
+                                 the action row rather than as something clickable, so the raw
+                                 arguments behind it were effectively undiscoverable. The chevron
+                                 also states which way it will go. -->
+                            <Button HorizontalAlignment="Left"
+                                    Style="{StaticResource InteractiveCardTertiaryButtonStyle}"
+                                    IsEnabled="{x:Bind Message.AreApprovalRequestControlsEnabled, Mode=OneWay}"
+                                    Command="{x:Bind Message.ToggleApprovalDetailsCommand, Mode=OneWay}"
+                                    AutomationProperties.Name="{x:Bind Message.ApprovalDetailsLabel, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <ic:FluentIcon Icon="ChevronDown" IconVariant="Regular" IconSize="Size16"
+                                                   VerticalAlignment="Center"
+                                                   RenderTransformOrigin="0.5,0.5"
+                                                   Foreground="{ThemeResource TextTertiaryBrush}"
+                                                   AutomationProperties.AccessibilityView="Raw">
+                                        <ic:FluentIcon.RenderTransform>
+                                            <RotateTransform Angle="{x:Bind Message.ApprovalDetailsChevronAngle, Mode=OneWay}" />
+                                        </ic:FluentIcon.RenderTransform>
+                                    </ic:FluentIcon>
+                                    <TextBlock Text="{x:Bind Message.ApprovalDetailsLabel, Mode=OneWay}"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Border x:Name="ApprovalDetailsPanel"
+                                    x:Load="{x:Bind Message.IsApprovalDetailsOpen, Mode=OneWay}"
+                                    Padding="10" CornerRadius="7"
+                                    Background="{ThemeResource CodeBackgroundBrush}"
+                                    BorderBrush="{ThemeResource BorderSubtleBrush}" BorderThickness="1">
+                                <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto"
+                                              HorizontalScrollBarVisibility="Disabled"
+                                              HorizontalScrollMode="Disabled"
+                                              IsVerticalScrollChainingEnabled="True"
+                                              IsTabStop="False">
+                                    <controls:ToolResultTextBlock Text="{x:Bind Message.EventArgs, Mode=OneWay}" />
+                                </ScrollViewer>
+                            </Border>
+                        </StackPanel>
+
+                    </StackPanel>
+                </Grid>
+            </local:InteractiveCard.CardBody>
+            <local:InteractiveCard.CardFooter>
+                <Grid Padding="12,10" KeyDown="ApprovalRoot_KeyDown">
+                    <Button Margin="0,12,0,0" MinHeight="36" Padding="14,0"
+                            HorizontalAlignment="Right" IsEnabled="False"
+                            Style="{StaticResource AccentButtonStyle}"
+                            Visibility="{x:Bind Message.IsApprovalSubmitting, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ProgressRing Width="16" Height="16" IsActive="True" />
+                            <TextBlock Text="{x:Bind Message.ApprovalSubmittingVerb, Mode=OneWay}"
+                                       FontSize="{StaticResource ProductBodyFontSize}" VerticalAlignment="Center"
+                                       AutomationProperties.LiveSetting="Polite" />
+                        </StackPanel>
+                    </Button>
+
+                    <Border Margin="0,12,0,0" Padding="10,8" CornerRadius="7"
+                            Background="{ThemeResource DangerSubtleBrush}"
+                            Visibility="{x:Bind Message.IsApprovalFailedResult, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                        <Grid ColumnSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ic:FluentIcon Icon="ErrorCircle" IconVariant="Regular" IconSize="Size16"
+                                           Foreground="{ThemeResource DangerBrush}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{x:Bind Message.ApprovalErrorText, Mode=OneWay}"
+                                       FontSize="{StaticResource ProductCaptionFontSize}" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextPrimaryBrush}"
+                                       AutomationProperties.LiveSetting="Assertive" />
+                        <Button x:Uid="ToolRetry" Grid.Column="2" Content="Retry" MinHeight="34"
+                                    Command="{x:Bind Message.RetryApprovalCommand, Mode=OneWay}"
+                                    AutomationProperties.Name="Retry approval response" />
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Margin="0,12,0,0"
+                                 Spacing="8"
+                           Visibility="{x:Bind Message.IsApprovalWaiting, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                        <!-- Decisions come FIRST in the tree, so Tab reaches them before the
+                             auxiliary row. It used to be the other way round, which put "Stop
+                             entire task" — the action that kills the whole turn — two tab stops
+                             from the card and ahead of every real answer. Visual order is
+                             preserved by Grid rows rather than by document order. -->
+                        <Grid RowSpacing="8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <StackPanel x:Name="ApprovalDecisionActions" Grid.Row="1"
+                                        Orientation="Horizontal" Spacing="8"
+                                        HorizontalAlignment="Right"
+                                        Visibility="{x:Bind Message.ShowApprovalDecisionActions, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                                <!-- Decline carries the emphasis when the command is destructive;
+                                     see ChatMessage.ApprovalDeclineButtonStyle. -->
+                                <Button x:Name="DeclineButton" AutomationProperties.AutomationId="DeclineButton" x:Uid="ToolDecline" Content="Decline"
+                                        TabIndex="1"
+                                        Style="{x:Bind Message.ApprovalDeclineButtonStyle, Mode=OneWay, Converter={StaticResource ResourceStyle}}"
+                                        Command="{x:Bind Message.RejectCommand, Mode=OneWay}"
+                                        AutomationProperties.Name="Decline this command"
+                                        ToolTipService.ToolTip="Decline only this command; the agent may continue." />
+                                <Button x:Name="AllowSessionButton" AutomationProperties.AutomationId="AllowSessionButton" x:Uid="ToolActivityAllowSession"
+                                        TabIndex="2"
+                                        Style="{StaticResource InteractiveCardButtonStyle}"
+                                        Command="{x:Bind Message.TrustSessionCommand, Mode=OneWay}"
+                                        AutomationProperties.Name="{x:Bind Message.ApprovalTrustName, Mode=OneWay}"
+                                        ToolTipService.ToolTip="Allow this tool for the current session only.">
+                                    <StackPanel Orientation="Horizontal" Spacing="7">
+                                        <ic:FluentIcon Icon="ShieldTask" IconVariant="Regular" IconSize="Size16"
+                                                       Foreground="{ThemeResource TextSecondaryBrush}" />
+                                        <TextBlock x:Uid="ToolAllowSession" Text="Allow for session" />
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="AllowOnceButton" AutomationProperties.AutomationId="AllowOnceButton"
+                                        TabIndex="3"
+                                        Style="{x:Bind Message.ApprovalAllowButtonStyle, Mode=OneWay, Converter={StaticResource ResourceStyle}}"
+                                        Command="{x:Bind Message.AllowOnceCommand, Mode=OneWay}"
+                                        AutomationProperties.Name="{x:Bind Message.ApprovalAllowOnceName, Mode=OneWay}">
+                                    <StackPanel Orientation="Horizontal" Spacing="7">
+                                        <!-- The play glyph is an invitation to run, so it stands
+                                             down on a destructive command along with the fill. -->
+                                        <ic:FluentIcon Icon="Play" IconVariant="Regular" IconSize="Size16"
+                                                       Visibility="{x:Bind Message.ShowApprovalAllowGlyph, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                                        <TextBlock x:Uid="ToolAllowOnce" Text="Allow once" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+
+                            <StackPanel x:Name="ApprovalAuxActions" Grid.Row="0"
+                                        Orientation="Horizontal" Spacing="4"
+                                        VerticalAlignment="Center"
+                                        Visibility="{x:Bind Message.ShowApprovalDecisionActions, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                                <Button x:Name="ExplainWhyButton" AutomationProperties.AutomationId="ExplainWhyButton" x:Uid="ToolExplainWhy" Content="Explain why"
+                                        TabIndex="4"
+                                        Style="{StaticResource InteractiveCardTertiaryButtonStyle}"
+                                        Command="{x:Bind Message.ExplainCommand, Mode=OneWay}"
+                                        AutomationProperties.Name="Ask the agent to explain why this operation is required" />
+                                <Button x:Name="StopTaskButton" AutomationProperties.AutomationId="StopTaskButton" x:Uid="ToolStopTask" Content="Stop entire task"
+                                        TabIndex="5"
+                                        Style="{StaticResource InteractiveCardTertiaryButtonStyle}"
+                                        Foreground="{ThemeResource DangerBrush}"
+                                        Command="{x:Bind Message.StopCommand, Mode=OneWay}"
+                                        AutomationProperties.Name="{x:Bind Message.ApprovalStopName, Mode=OneWay}"
+                                        ToolTipService.ToolTip="This stops the entire agent task, not only this command." />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Stop confirmation. Stop ends the whole turn, so it gets the same
+                             second step plan_review already gives its much milder Reject. The
+                             ordinary decisions hide while this is up, so the card asks one
+                             question at a time. -->
+                        <Border x:Name="ApprovalStopConfirm"
+                                x:Load="{x:Bind Message.IsApprovalStopConfirmOpen, Mode=OneWay}"
+                                Padding="10,8" CornerRadius="7"
+                                Background="{ThemeResource DangerSubtleBrush}">
+                            <StackPanel Spacing="8">
+                                <TextBlock x:Uid="ToolStopConfirmTitle" Text="Stop the entire task?"
+                                           FontSize="{StaticResource ProductBodyFontSize}" FontWeight="SemiBold"
+                                           Foreground="{ThemeResource TextPrimaryBrush}" TextWrapping="Wrap" />
+                                <TextBlock x:Uid="ToolStopConfirmDetail"
+                                           Text="The agent stops here, not just this command. Work already done is kept, but nothing further runs."
+                                           FontSize="{StaticResource ProductCaptionFontSize}"
+                                           Foreground="{ThemeResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                                <StackPanel x:Name="StopConfirmActions" Orientation="Horizontal"
+                                            HorizontalAlignment="Right" Spacing="8">
+                                    <Button x:Uid="CommonCancelButton" Content="Cancel"
+                                            Style="{StaticResource InteractiveCardTertiaryButtonStyle}"
+                                            Command="{x:Bind Message.CancelApprovalStopCommand, Mode=OneWay}" />
+                                    <Button x:Name="ConfirmStopButton" AutomationProperties.AutomationId="ConfirmStopButton"
+                                            x:Uid="ToolStopConfirmAction" Content="Stop task"
+                                            Style="{StaticResource InteractiveCardButtonStyle}"
+                                            Foreground="{ThemeResource DangerBrush}"
+                                            Command="{x:Bind Message.ConfirmApprovalStopCommand, Mode=OneWay}"
+                                            AutomationProperties.Name="Confirm stopping the entire task" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </local:InteractiveCard.CardFooter>
+        </local:InteractiveCard>
+    </Grid>
+</UserControl>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="ConnectOnion.WinUIClient.Controls.InAppNotificationHost"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    IsHitTestVisible="True">
+
+    <!-- Null background => empty area is hit-test-transparent, so only toast cards
+         capture pointer input and the chat underneath stays fully usable. -->
+    <Grid Background="{x:Null}">
+        <StackPanel x:Name="ToastStack"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Margin="0,48,16,0"
+                    MaxWidth="360"
+                    Spacing="8" />
+    </Grid>
+</UserControl>

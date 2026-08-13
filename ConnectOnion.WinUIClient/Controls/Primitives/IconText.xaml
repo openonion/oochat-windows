@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="ConnectOnion.WinUIClient.Controls.IconText"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ic="using:FluentIcons.WinUI"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!-- The recurring "icon + label" row, usually dropped into a Button as its
+         content. Icon and text share the control's inherited Foreground/FontSize;
+         set those (plus Spacing/IconSize/Glyph/Text) per site. -->
+    <StackPanel Orientation="Horizontal"
+                Spacing="{x:Bind Spacing, Mode=OneWay}"
+                VerticalAlignment="Center">
+        <ic:FluentIcon Icon="{x:Bind Glyph, Mode=OneWay}"
+                       IconVariant="Regular"
+                       IconSize="{x:Bind IconSize, Mode=OneWay}"
+                       Foreground="{x:Bind Foreground, Mode=OneWay}"
+                       VerticalAlignment="Center" />
+        <TextBlock Text="{x:Bind Text, Mode=OneWay}"
+                   Foreground="{x:Bind Foreground, Mode=OneWay}"
+                   FontSize="{x:Bind FontSize, Mode=OneWay}"
+                   VerticalAlignment="Center" />
+    </StackPanel>
+</UserControl>

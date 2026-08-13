@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+# audit_repo.sh — pre-publication audit for repos inherited from student projects.
+#
+# Usage:  ./audit_repo.sh <repo-path>
+# Exit:   0 = no blocking findings, 1 = at least one BLOCK finding, 2 = bad usage.
+#
+# Every finding prints as  file:line: <the line>  so it can be acted on directly.
+# Tiers: BLOCK (must clear before publishing) / CLEAN (should clear) / REVIEW (human decides).
+#
+# Portable to bash 3.2 (macOS default) on purpose: no namerefs, no associative arrays.
+# The first version used `local -n` and printed an empty report while still exiting
+# non-zero — a check that says BLOCKED and shows nothing is worse than no check.
+
+set -uo pipefail
+
+REPO="${1:-}"
+[ -d "$REPO" ] || { echo "usage: $0 <repo-path>" >&2; exit 2; }
+cd "$REPO" || exit 2
+
+TMP=$(mktemp -d) || exit 2
+trap 'rm -rf "$TMP"' EXIT
+: > "$TMP/block"; : > "$TMP/clean"; : > "$TMP/review"
+BLOCK=0
+
+# Directories that are never ours to clean, and binaries grep would garble.
+PRUNE=(--exclude-dir=.git --exclude-dir=node_modules --exclude-dir=build
+       --exclude-dir=.gradle --exclude-dir=Pods --exclude-dir=DerivedData
+       --exclude-dir=dist --exclude-dir=.next --exclude-dir=vendor
+       --exclude-dir=__pycache__ --exclude-dir=.venv --exclude-dir=screenshots
+       --exclude=*.png --exclude=*.jpg --exclude=*.jpeg --exclude=*.gif
+       --exclude=*.svg --exclude=*.pdf --exclude=*.zip --exclude=*.jar
+       --exclude=*.ico --exclude=*.webm --exclude=*.mp4 --exclude=*.webp
+       --exclude=*.lock --exclude=*-lock.json --exclude=*.bin)
+
+# Cap per-check output. A check that dumps 4000 lines is not actionable, but the
+# true count still has to be reported or a truncated list reads as the whole list.
+MAX_HITS=40
+
+# scan <tier> <label> <extended-regex> [extra grep args...]
+scan() {
+  tier="$1"; label="$2"; pattern="$3"; shift 3
+  hits=$(grep -rInE "$pattern" . "${PRUNE[@]}" "$@" 2>/dev/null | sed 's|^\./||')
+  [ -z "$hits" ] && return 0
+
+  # Via a file, not `printf | head`: head closes the pipe on the Nth line and the
+  # SIGPIPE that follows killed the run before it printed any report at all.
+  printf '%s\n' "$hits" > "$TMP/hits"
+  n=$(wc -l < "$TMP/hits" | tr -d ' ')
+
+  case "$tier" in
+    BLOCK)  out="$TMP/block"; BLOCK=1 ;;
+    CLEAN)  out="$TMP/clean" ;;
+    REVIEW) out="$TMP/review" ;;
+  esac
+
+  {
+    echo "### $label — $n hit(s)"
+    head -n "$MAX_HITS" "$TMP/hits"
+    [ "$n" -gt "$MAX_HITS" ] && echo "    … $((n - MAX_HITS)) more not shown (total $n)"
+    echo
+  } >> "$out"
+}
+
+note() {  # note <tier> <label> <file:line: text>
+  case "$1" in
+    BLOCK)  out="$TMP/block"; BLOCK=1 ;;
+    CLEAN)  out="$TMP/clean" ;;
+    REVIEW) out="$TMP/review" ;;
+  esac
+  { echo "### $2 — 1 hit(s)"; echo "$3"; echo; } >> "$out"
+}
+
+# ---------------------------------------------------------------- 1. personal info
+scan BLOCK "Student zID"        'z[0-9]{7}'
+scan BLOCK "Student email"      '[A-Za-z0-9._%+-]+@student\.unsw\.edu\.au'
+scan BLOCK "UNSW staff/AD email" '[A-Za-z0-9._%+-]+@(ad\.)?unsw\.edu\.au'
+
+# ---------------------------------------------------------------- 2. course / team traces
+scan BLOCK "Course code"        'COMP[- ]?(3900|9900)|comp(3900|9900)'
+# Group codes are letter-2digits-letter. Anchored to the contexts they actually
+# appear in (package names, paths, doc prose) — a bare \b[A-Za-z][0-9]{2}[A-Za-z]\b
+# also matches hashes, gradle versions and colour tokens, which buries the signal.
+scan BLOCK "Group code in package/path" '(^|[/.[:space:]"'"'"'])(9900|3900)?[-_]?[A-Za-z][0-9]{2}[A-Za-z]([/._[:space:]"'"'"']|$)'
+scan CLEAN "Team name"          '\b(cake|donut|banana|bread)\b' -i
+scan CLEAN "Coursework vocabulary" '\b(sprint|retrospective|marking|rubric|tutor|assignment|deliverable|capstone|standup|scrum)\b' -i
+scan CLEAN "Classroom repo naming" 'capstone-project-[0-9]{2}t[0-9]'
+
+# ---------------------------------------------------------------- 3. original GitHub traces
+[ -d .git ] && note BLOCK ".git directory present" ".git/:0: history carries author emails and the original remote"
+
+scan BLOCK "Original org/owner in URL" 'github\.com[/:]((UNSW|unsw)[A-Za-z0-9._-]*)'
+scan CLEAN "Any github.com URL (confirm it points at us)" 'github\.com[/:][A-Za-z0-9._-]+/[A-Za-z0-9._-]+'
+scan REVIEW "CI badge" '!\[[^]]*\]\([^)]*(actions/workflows|badge)[^)]*\)'
+
+for f in TUTOR.md HANDOVER.md MIRROR_TEST.md CODEOWNERS .github/CODEOWNERS; do
+  [ -f "$f" ] && note CLEAN "Coursework/ownership artefact" "$f:1: file exists"
+done
+
+# ---------------------------------------------------------------- 4. secrets & endpoints
+scan BLOCK "API-key-shaped string" '(sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{30,}|gho_[A-Za-z0-9]{30,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,})'
+# Our own key format. Found in a screenshot test on the first dirty run, and the
+# generic patterns above did not match it — a leak of ours is the one we would
+# least like to learn about from a third party.
+scan BLOCK "OpenOnion key format" 'oo_(live|test)_[A-Za-z0-9]{8,}'
+scan BLOCK "Private key block"     'BEGIN [A-Z ]*PRIVATE KEY'
+# Hardcoded dev endpoints decide whether "take it and change it" is actually true.
+scan BLOCK "Hardcoded local endpoint" '(localhost|127\.0\.0\.1|10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|192\.168\.[0-9]{1,3}\.[0-9]{1,3})(:[0-9]+)?'
+scan REVIEW "Password/secret assignment" '(password|passwd|secret|api_?key|token)[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']{4,}' -i
+
+for f in .env .env.local .env.production; do
+  [ -f "$f" ] && note BLOCK "Committed env file" "$f:1: file exists"
+done
+
+# ---------------------------------------------------------------- 5. our branding
+scan REVIEW "Bundle id / package name" '^[[:space:]]*(applicationId|PRODUCT_BUNDLE_IDENTIFIER|namespace)[[:space:]]*[=:]'
+scan REVIEW "Copyright line" 'Copyright (\(c\)|©)'
+
+# ---------------------------------------------------------------- report
+echo "==============================================================="
+echo " Pre-publication audit: $(pwd)"
+echo " $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+echo "==============================================================="
+
+emit() {  # emit <file> <header>
+  echo
+  if [ -s "$1" ]; then
+    echo "$2"
+    echo "---------------------------------------------------------------"
+    cat "$1"
+  else
+    echo "$2: none"
+  fi
+}
+
+emit "$TMP/block"  "🔴 MUST CLEAR — blocks publication"
+emit "$TMP/clean"  "🟡 SHOULD CLEAR"
+emit "$TMP/review" "🔵 NEEDS A HUMAN — do not auto-strip"
+
+cat <<'LIMITS'
+
+WHAT THIS SCRIPT CANNOT SEE — a clean run is not a clearance
+---------------------------------------------------------------
+1. Real names with no zID or email beside them. This script found the
+   students' names only because they sat on the same line as their zID.
+   A name on its own is invisible to it. Needs a human or an AI pass.
+2. Anything inside .git history — the scan covers the working tree only.
+   Author names and emails live in commit metadata regardless of how
+   clean the files look. Check that .git was actually dropped.
+3. Anything in an excluded binary: images, PDFs, jars, screenshots.
+   A team photo or a marked-up PDF passes this check silently.
+4. Judgement calls. Hits under NEEDS A HUMAN are reported, never
+   auto-resolved, and a BLOCK on a test fixture still blocks — waive it
+   deliberately rather than teaching the script to guess.
+LIMITS
+
+echo
+echo "==============================================================="
+if [ "$BLOCK" -eq 1 ]; then
+  echo " RESULT: BLOCKED — clear the red section before publishing."
+else
+  echo " RESULT: no blocking findings (see limits above — not a clearance)."
+fi
+echo "==============================================================="
+exit "$BLOCK"

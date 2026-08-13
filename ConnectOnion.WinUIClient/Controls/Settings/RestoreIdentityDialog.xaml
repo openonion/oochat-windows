@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog x:Class="ConnectOnion.WinUIClient.Controls.RestoreIdentityDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ic="using:FluentIcons.WinUI"
+    x:Uid="RestoreIdentityDialog"
+    Title="Restore an identity"
+    PrimaryButtonText="Replace identity"
+    CloseButtonText="Cancel"
+    DefaultButton="Close"
+    IsPrimaryButtonEnabled="False">
+
+    <StackPanel Spacing="16" MinWidth="0" Width="440">
+
+        <Border Background="{ThemeResource DangerSubtleBrush}" CornerRadius="8" Padding="12,10">
+            <!-- A Grid, not a horizontal StackPanel: a StackPanel measures its children with
+                 infinite width on the stacking axis, so TextWrapping never triggers and the
+                 warning is silently clipped at the border. -->
+            <Grid ColumnSpacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ic:FluentIcon Grid.Column="0" Icon="Warning" IconVariant="Regular" IconSize="Size16"
+                               Foreground="{ThemeResource DangerBrush}" VerticalAlignment="Top" />
+                <TextBlock x:Uid="RestoreIdentityWarning" Grid.Column="1" TextWrapping="Wrap" MinWidth="0" Style="{StaticResource CaptionTextBlockStyle}"
+                           Text="This replaces the identity on this device. The current one is erased and cannot be recovered without its own backup, and agents that authorized the current address will have to authorize the restored one." />
+            </Grid>
+        </Border>
+
+        <!-- Offered here rather than left to the user to remember: this dialog is the last moment
+             the current identity still exists, and "back it up first" is advice nobody can act on
+             once they have pressed the button. -->
+        <Button x:Name="BackupCurrentButton" AutomationProperties.AutomationId="BackupCurrentButton" Click="BackupCurrent_Click" HorizontalAlignment="Left">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <ic:FluentIcon Icon="Key" IconVariant="Regular" IconSize="Size16" />
+                <TextBlock x:Uid="RestoreIdentityBackupFirst" Text="Back up the current identity first" />
+            </StackPanel>
+        </Button>
+
+        <StackPanel Spacing="6">
+        <TextBlock x:Uid="RestoreIdentityPhrase" Text="Recovery phrase" Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <TextBox x:Uid="RestoreIdentityInput" x:Name="PhraseBox" AutomationProperties.AutomationId="PhraseBox" AcceptsReturn="True" TextWrapping="Wrap"
+                     Height="96" MinWidth="0"
+                     FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                     PlaceholderText="Enter your 12-word recovery phrase"
+                     TextChanged="Phrase_TextChanged"
+                     AutomationProperties.Name="Recovery phrase or private key" />
+            <TextBlock x:Uid="RestoreIdentityLegacyHint" TextWrapping="Wrap" MinWidth="0" Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextSecondaryBrush}"
+                       Text="A private key in hex also works, for an identity created before recovery phrases." />
+        </StackPanel>
+
+        <!-- The address is the whole verification: a phrase with one wrong word is still a valid
+             phrase, it just belongs to a stranger. Showing where it lands before committing is the
+             only way a user can catch that. -->
+        <Border x:Name="PreviewBlock" Visibility="Collapsed"
+                Background="{ThemeResource SurfaceSecondaryBrush}"
+                BorderBrush="{ThemeResource BorderSubtleBrush}" BorderThickness="1"
+                CornerRadius="8" Padding="12,10">
+            <StackPanel Spacing="8">
+                <StackPanel Spacing="2">
+                    <TextBlock x:Uid="RestoreIdentityCurrent" Text="Current address" Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextSecondaryBrush}" />
+                    <TextBlock x:Name="CurrentAddressText" TextWrapping="Wrap" MinWidth="0"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                               Foreground="{ThemeResource TextSecondaryBrush}" />
+                </StackPanel>
+                <StackPanel Spacing="2">
+                    <TextBlock x:Uid="RestoreIdentityTarget" Text="Restores to" Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextSecondaryBrush}" />
+                    <TextBlock x:Name="RestoredAddressText" TextWrapping="Wrap" MinWidth="0"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               FontFamily="{StaticResource JetBrainsMonoFontFamily}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <TextBlock x:Name="StatusText" Visibility="Collapsed" TextWrapping="Wrap" MinWidth="0"
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   Foreground="{ThemeResource StatusErrorTextBrush}" />
+    </StackPanel>
+</ContentDialog>

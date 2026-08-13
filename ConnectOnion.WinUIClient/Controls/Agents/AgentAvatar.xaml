@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="ConnectOnion.WinUIClient.Controls.AgentAvatar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Width="{x:Bind Size, Mode=OneWay}"
+    Height="{x:Bind Size, Mode=OneWay}"
+    mc:Ignorable="d">
+
+    <!-- The fallback initial stays neutral so colour is reserved for semantic status. -->
+    <Border x:Name="AvatarBorder"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            CornerRadius="{x:Bind CornerRadius, Mode=OneWay}"
+            Background="{ThemeResource AvatarBackgroundBrush}"
+            BorderBrush="{ThemeResource AvatarBorderBrush}"
+            BorderThickness="1">
+        <Grid>
+            <!-- Shown whenever there is no usable custom image: none set, the file is missing, or
+                 it failed to decode. Theme resources keep the fallback legible in every theme. -->
+            <TextBlock x:Name="InitialText"
+                       Text="{x:Bind Initial, Mode=OneWay}"
+                       Foreground="{ThemeResource AvatarForegroundBrush}"
+                       FontSize="{x:Bind FontSize, Mode=OneWay}"
+                       FontWeight="SemiBold"
+                       MaxLines="1"
+                       TextAlignment="Center"
+                       TextTrimming="CharacterEllipsis"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       IsHitTestVisible="False" />
+
+            <!-- Source is assigned from code-behind once ImagePath resolves to a file inside the
+                 managed avatar directories. UniformToFill keeps the layout intact even if the
+                 stored file was replaced by hand with something that is not square. -->
+            <Image x:Name="CustomAvatarImage"
+                   Stretch="UniformToFill"
+                   HorizontalAlignment="Stretch"
+                   VerticalAlignment="Stretch"
+                   ImageFailed="CustomImage_ImageFailed"
+                   AutomationProperties.AccessibilityView="Raw"
+                   IsHitTestVisible="False"
+                   Visibility="Collapsed" />
+        </Grid>
+    </Border>
+</UserControl>
