@@ -97,6 +97,8 @@ jobs:
           -p:RuntimeIdentifiers=win-${{ matrix.platform }}
           -p:NuGetLockFilePath=packages.publish.lock.json
           -p:AppxPackageSigningEnabled=false
+          -p:RestoreLockedMode=false
+          -p:RestoreForceEvaluate=true
           -p:Version=${{ steps.version.outputs.version }}
           --output publish/${{ matrix.platform }}
 

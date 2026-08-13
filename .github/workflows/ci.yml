@@ -87,6 +87,8 @@ jobs:
           -p:RuntimeIdentifiers=win-x64
           -p:NuGetLockFilePath=packages.publish.lock.json
           -p:AppxPackageSigningEnabled=false
+          -p:RestoreLockedMode=false
+          -p:RestoreForceEvaluate=true
 
       # UI tests drive a real window and cannot run on a headless runner.
       - name: Test
