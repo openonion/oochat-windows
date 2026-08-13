@@ -51,7 +51,9 @@ jobs:
           Write-Host "Building version $v"
 
       - name: Restore
-        run: dotnet restore -p:Platform=${{ matrix.platform }}
+        run: >
+          dotnet restore ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.sln
+          -p:Platform=${{ matrix.platform }}
 
       - name: Build (Release)
         run: >

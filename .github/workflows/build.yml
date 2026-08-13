@@ -33,17 +33,23 @@ jobs:
       # The solution lives under ConnectOnion.WinUIClient/ and references every
       # project by relative path; there is no solution file at the repo root, so
       # bare `dotnet restore` has nothing to act on.
+      # Platform must be explicit. The solution offers Any CPU, which resolves to
+      # PlatformTarget x86 and then conflicts with the win-x64 RuntimeIdentifier
+      # (NETSDK1032). The project's own build scripts pass -p:Platform=x64 too.
       - name: Restore
-        run: dotnet restore ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.sln
+        run: >
+          dotnet restore ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.sln
+          -p:Platform=x64
 
       - name: Build (Release)
         run: >
           dotnet build ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.sln
-          --configuration Release --no-restore
+          --configuration Release --no-restore -p:Platform=x64
 
       # UI tests drive a real window and cannot run on a headless runner.
       - name: Test
         run: >
           dotnet test ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.sln
           --configuration Release --no-build --verbosity normal
+          -p:Platform=x64
           --filter "FullyQualifiedName!~UITests"
