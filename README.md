@@ -4,7 +4,7 @@ Native Windows client for [ConnectOnion](https://github.com/openonion/connectoni
 Connect to an agent by its `0x…` address and talk to it — the same protocol the
 [web client](https://github.com/openonion/oo-chat) speaks.
 
-[![Windows Build](https://github.com/openonion/oochat-windows/actions/workflows/build.yml/badge.svg)](https://github.com/openonion/oochat-windows/actions/workflows/build.yml)
+[![Windows Build](https://github.com/openonion/oochat-windows/actions/workflows/ci.yml/badge.svg)](https://github.com/openonion/oochat-windows/actions/workflows/ci.yml)
 
 ## Who this is for
 

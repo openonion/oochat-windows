@@ -44,17 +44,40 @@ jobs:
       # PublishReadyToRun is on for every non-Debug configuration, but R2R needs
       # the runtime pack that only a publish restore pulls in (NETSDK1094). It is
       # a publish-time optimisation, so turn it off for the build/test pass —
-      # release.yml publishes with it on.
+      # the publish step below, and release.yml, still ship trimmed.
       - name: Build (Release)
         run: >
           dotnet build ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.sln
           --configuration Release --no-restore -p:Platform=x64
-          -p:PublishReadyToRun=false
+          -p:PublishReadyToRun=false -p:PublishTrimmed=false
+
+      # The app publish must match what production ships — trimmed and
+      # self-contained. Architecture/TrimmingGateTests asserts this workflow
+      # actually does it, so the gate is evidence rather than intention.
+      #
+      # Publish intermediates from the Release build above are untrimmed; reusing
+      # them with --no-restore can silently produce an untrimmed artifact even
+      # with PublishTrimmed=true. Clean them and let publish restore its own graph.
+      - name: Clean publish intermediates
+        run: |
+          Remove-Item -Recurse -Force ConnectOnion.WinUIClient/obj/Release/net10.0-windows10.0.19041.0/win-x64 -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force ConnectOnion.WinUIClient/bin/Release/net10.0-windows10.0.19041.0/win-x64/publish -ErrorAction SilentlyContinue
+        shell: pwsh
+
+      - name: Publish (trimmed, self-contained)
+        run: >
+          dotnet publish ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.csproj
+          --configuration Release
+          -p:Platform=x64
+          -p:RuntimeIdentifier=win-x64
+          -p:SelfContained=true
+          -p:WindowsAppSDKSelfContained=true
+          -p:PublishTrimmed=true
 
       # UI tests drive a real window and cannot run on a headless runner.
       - name: Test
         run: >
           dotnet test ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.sln
           --configuration Release --no-build --verbosity normal
-          -p:Platform=x64 -p:PublishReadyToRun=false
+          -p:Platform=x64 -p:PublishReadyToRun=false -p:PublishTrimmed=false
           --filter "FullyQualifiedName!~UITests"
