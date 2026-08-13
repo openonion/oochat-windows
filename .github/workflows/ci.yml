@@ -59,20 +59,34 @@ jobs:
       # them with --no-restore can silently produce an untrimmed artifact even
       # with PublishTrimmed=true. Clean them and let publish restore its own graph.
       - name: Clean publish intermediates
-        run: |
-          Remove-Item -Recurse -Force ConnectOnion.WinUIClient/obj/Release/net10.0-windows10.0.19041.0/win-x64 -ErrorAction SilentlyContinue
-          Remove-Item -Recurse -Force ConnectOnion.WinUIClient/bin/Release/net10.0-windows10.0.19041.0/win-x64/publish -ErrorAction SilentlyContinue
         shell: pwsh
+        run: >
+          dotnet clean ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.csproj
+          --configuration Release
+          --runtime win-x64
+          -p:Platform=x64
+          -p:BuildProjectReferences=false
 
+      # The RID-specific publish uses a different global-property graph from the
+      # solution build, and each participating project commits a separate lock
+      # file for it (packages.publish.lock.json). Without NuGetLockFilePath the
+      # restore validates against the ordinary lock file and fails NU1004 on the
+      # RID and ILLink references this publish propagates to Core and Protocol.
       - name: Publish (trimmed, self-contained)
+        shell: pwsh
         run: >
           dotnet publish ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.csproj
           --configuration Release
+          --runtime win-x64
           -p:Platform=x64
-          -p:RuntimeIdentifier=win-x64
+          -p:RunUnpackaged=true
           -p:SelfContained=true
           -p:WindowsAppSDKSelfContained=true
           -p:PublishTrimmed=true
+          -p:PublishReadyToRun=true
+          -p:RuntimeIdentifiers=win-x64
+          -p:NuGetLockFilePath=packages.publish.lock.json
+          -p:AppxPackageSigningEnabled=false
 
       # UI tests drive a real window and cannot run on a headless runner.
       - name: Test
