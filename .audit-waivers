@@ -1,0 +1,29 @@
+# Pre-publication audit waivers for this repository.
+#
+# Format:  <path-prefix>  <rule-keyword>  # <reason>
+#
+# The rule keyword is matched against the finding's LABEL as printed in the
+# report ("Hardcoded local endpoint", "Team name", ...), not against the text
+# that matched. Both fields are required: a path-only line is ignored on
+# purpose, because it would waive every rule on that path, which is how a
+# waiver added for one reason ends up hiding an unrelated finding.
+#
+# Waived hits are still printed in the report. They stop blocking; they do not
+# disappear. Anything not listed here still fails the build.
+
+tests/                          endpoint    # Test fixtures dial loopback by design.
+ConnectOnion.Protocol.LiveTest/ endpoint    # Manual smoke-test harness, not shipped.
+ConnectOnion.Protocol/          endpoint    # EndpointResolver must recognise loopback to rank candidate endpoints; the strings are in its ranking logic and comments.
+.github/                        endpoint    # The audit workflow's own comments quote the rule.
+
+ConnectOnion.Protocol/          Team        # Bip39EnglishWordlist.txt is the real BIP39 wordlist; "cake", "bread" and "banana" are entries in it and cannot be edited.
+ConnectOnion.WinUIClient.Core/  Team        # "bread" inside remote_read_file in a regex-boundary comment.
+
+tests/                          Coursework  # "assignment" in its C# sense (assignment statement).
+docs/                           Coursework  # Same usage in engineering prose.
+ConnectOnion.WinUIClient/       Coursework  # Same usage in code comments.
+ConnectOnion.WinUIClient.Core/  Coursework  # Same usage in code comments.
+
+docs/                           Group       # "§11" and "a11y" match the letter-2digits-letter group-code shape.
+ConnectOnion.WinUIClient/       Group       # "a11y" in an accessibility comment.
+.github/                        Group       # Same shape inside this repo's own workflow comments.

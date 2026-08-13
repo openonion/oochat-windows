@@ -26,8 +26,32 @@ GREP=$(command -v /usr/bin/grep || command -v /bin/grep) || {
 
 TMP=$(mktemp -d) || exit 2
 trap 'rm -rf "$TMP"' EXIT
-: > "$TMP/block"; : > "$TMP/clean"; : > "$TMP/review"
+: > "$TMP/block"; : > "$TMP/clean"; : > "$TMP/review"; : > "$TMP/waived"
 BLOCK=0
+
+# Optional per-repo waivers: a .audit-waivers file, one entry per line:
+#     <path-prefix>   # <reason>
+#
+# A blanket rule that a whole product cannot satisfy gets bypassed, and a
+# bypassed gate protects nothing. So: waivers are per-repo and explicit, a line
+# without a "# reason" is ignored on purpose, and waived hits are still PRINTED
+# in their own section — they stop blocking, they do not disappear.
+: > "$TMP/waivepaths"
+if [ -f .audit-waivers ]; then
+  while IFS= read -r line; do
+    case "$line" in
+      ''|'#'*)  continue ;;
+      *'#'*)    _w="${line%%#*}"
+                _wpath=$(printf '%s' "$_w" | awk '{print $1}')
+                _wrule=$(printf '%s' "$_w" | awk '{print $2}')
+                # Both fields are required. A path-only waiver would silently hide
+                # every other rule on that path — which is how a docs/ waiver added
+                # for loopback URLs also buried leftover coursework wording.
+                [ -n "$_wpath" ] && [ -n "$_wrule" ] &&
+                  printf '%s\t%s\n' "$_wpath" "$_wrule" >> "$TMP/waivepaths" ;;
+    esac
+  done < .audit-waivers
+fi
 
 # Directories that are never ours to clean, and binaries grep would garble.
 PRUNE=(--exclude-dir=.git --exclude-dir=node_modules --exclude-dir=build
@@ -37,7 +61,8 @@ PRUNE=(--exclude-dir=.git --exclude-dir=node_modules --exclude-dir=build
        --exclude=*.png --exclude=*.jpg --exclude=*.jpeg --exclude=*.gif
        --exclude=*.svg --exclude=*.pdf --exclude=*.zip --exclude=*.jar
        --exclude=*.ico --exclude=*.webm --exclude=*.mp4 --exclude=*.webp
-       --exclude=*.lock --exclude=*-lock.json --exclude=*.bin)
+       --exclude=*.lock --exclude=*-lock.json --exclude=*.bin
+       --exclude=.audit-waivers --exclude=audit_repo.sh)
 
 # Cap per-check output. A check that dumps 4000 lines is not actionable, but the
 # true count still has to be reported or a truncated list reads as the whole list.
@@ -51,7 +76,22 @@ scan() {
 
   # Via a file, not `printf | head`: head closes the pipe on the Nth line and the
   # SIGPIPE that follows killed the run before it printed any report at all.
-  printf '%s\n' "$hits" > "$TMP/hits"
+  printf '%s\n' "$hits" > "$TMP/hits.all"
+
+  # Split off anything a waiver covers. Waived hits go to their own section.
+  : > "$TMP/hits"
+  while IFS= read -r h; do
+    hf="${h%%:*}"; keep=1
+    while IFS="$(printf '\t')" read -r wp wr; do
+      [ -n "$wp" ] || continue
+      case "$hf" in "$wp"*) ;; *) continue ;; esac
+      case "$label" in *"$wr"*) keep=0; break ;; esac
+    done < "$TMP/waivepaths"
+    if [ "$keep" = 1 ]; then echo "$h" >> "$TMP/hits"
+    else echo "[$label] $h" >> "$TMP/waived"; fi
+  done < "$TMP/hits.all"
+
+  [ -s "$TMP/hits" ] || return 0
   n=$(wc -l < "$TMP/hits" | tr -d ' ')
 
   case "$tier" in
@@ -93,10 +133,36 @@ scan CLEAN "Coursework vocabulary" '\b(sprint|retrospective|marking|rubric|tutor
 scan CLEAN "Classroom repo naming" 'capstone-project-[0-9]{2}t[0-9]'
 
 # ---------------------------------------------------------------- 3. original GitHub traces
-[ -d .git ] && note BLOCK ".git directory present" ".git/:0: history carries author emails and the original remote"
+# A .git directory is not itself a problem — every CI checkout has one, and an
+# unconditional block there is why the first CI wiring needed continue-on-error,
+# which turns the gate off entirely. What matters is whose history it is.
+if [ -d .git ] && command -v git >/dev/null 2>&1; then
+  foreign=$(git log --format='%ae%n%ce' 2>/dev/null | sort -u |
+            "$GREP" -vE '(@openonion\.ai|@users\.noreply\.github\.com)$' || true)
+  if [ -n "$foreign" ]; then
+    while IFS= read -r a; do
+      [ -n "$a" ] && note BLOCK "Inherited author in git history" ".git:0: $a"
+    done <<EOF
+$foreign
+EOF
+  fi
+fi
 
 scan BLOCK "Original org/owner in URL" 'github\.com[/:]((UNSW|unsw)[A-Za-z0-9._-]*)'
-scan CLEAN "Any github.com URL (confirm it points at us)" 'github\.com[/:][A-Za-z0-9._-]+/[A-Za-z0-9._-]+'
+# Anything on github.com that is not one of ours. The UNSW-prefixed rule above
+# misses the common case: a student's PERSONAL account. Found exactly that in an
+# Android README (`github.com/<student>/oo-chat-android-Cake.git`) after the
+# org-prefixed check came back clean.
+# Every github.com URL that is not ours. The UNSW-prefixed rule above misses the
+# common case: a student's PERSONAL account. Found exactly that in an Android
+# README (github.com/<student>/oo-chat-android-Cake.git) after the org-prefixed
+# check came back clean.
+#
+# REVIEW rather than BLOCK, and no negative lookahead: BSD grep has no -P, and
+# legitimate upstream links (gradle, roborazzi) live in every Android repo. A
+# rule that reddens on gradlew would be bypassed within a day, which is worse
+# than a rule that asks a human to skim a short list.
+scan REVIEW "github.com URL that is not openonion" 'github\.com[/:][A-Za-z0-9._-]+/[A-Za-z0-9._-]+' --exclude=gradlew --exclude=gradlew.bat
 scan REVIEW "CI badge" '!\[[^]]*\]\([^)]*(actions/workflows|badge)[^)]*\)'
 
 for f in TUTOR.md HANDOVER.md MIRROR_TEST.md CODEOWNERS .github/CODEOWNERS; do
@@ -142,6 +208,7 @@ emit() {  # emit <file> <header>
 emit "$TMP/block"  "🔴 MUST CLEAR — blocks publication"
 emit "$TMP/clean"  "🟡 SHOULD CLEAR"
 emit "$TMP/review" "🔵 NEEDS A HUMAN — do not auto-strip"
+emit "$TMP/waived" "⚪ WAIVED by .audit-waivers — reviewed, not blocking"
 
 cat <<'LIMITS'
 

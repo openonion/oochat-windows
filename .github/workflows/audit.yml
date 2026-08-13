@@ -23,18 +23,21 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      # Full history: the audit inspects commit authors, and a shallow clone
+      # would let an inherited commit pass by simply not having been fetched.
       - name: Check out
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # The script's own report is the artifact worth reading; print it in full
       # whether or not the gate passes.
       - name: Run audit
         id: audit
-        continue-on-error: true
         run: |
           chmod +x scripts/audit_repo.sh
+          set -o pipefail
           ./scripts/audit_repo.sh . | tee audit-report.txt
-          echo "exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
 
       # Categories that must never appear. These are the ones that would put a
       # student's identity or the course into a repository published under our
