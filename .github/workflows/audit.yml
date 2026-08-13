@@ -2,8 +2,10 @@ name: Pre-publication audit
 
 # Guards the gate between "private repo we are cleaning up" and "public repo a
 # customer clones". It fails on student IDs, course codes, original repository
-# URLs and key-shaped strings. It is not a clearance on its own — it cannot see
-# inside binaries or git history. See the limits it prints at the end of a run.
+# URLs and key-shaped strings.
+#
+# It is not a clearance on its own: it cannot see inside binaries or git
+# history, and it cannot recognise a real name that has no ID beside it.
 on:
   push:
     branches: [main]
@@ -24,7 +26,66 @@ jobs:
       - name: Check out
         uses: actions/checkout@v4
 
+      # The script's own report is the artifact worth reading; print it in full
+      # whether or not the gate passes.
       - name: Run audit
+        id: audit
+        continue-on-error: true
         run: |
           chmod +x scripts/audit_repo.sh
-          ./scripts/audit_repo.sh .
+          ./scripts/audit_repo.sh . | tee audit-report.txt
+          echo "exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      # Categories that must never appear. These are the ones that would put a
+      # student's identity or the course into a repository published under our
+      # name, and none of them has a legitimate reason to exist here.
+      #
+      # The script also reports categories we accept in this repository, and
+      # each is waived deliberately rather than by loosening the script:
+      #   - ".git directory present"     — every checkout has one; the check is
+      #                                    for the working copy we imported from,
+      #                                    and that history was dropped before
+      #                                    the first commit (verify: 1 root commit).
+      #   - "Hardcoded local endpoint"   — test fixtures, plus EndpointResolver,
+      #                                    which must recognise localhost in order
+      #                                    to rank candidate endpoints.
+      #   - "Group code in package/path" — matches "a11y" and the section marker
+      #                                    "§11"; neither is a group code.
+      #   - "Team name"                  — "cake"/"bread"/"banana" are entries in
+      #                                    Bip39EnglishWordlist.txt, the real BIP39
+      #                                    wordlist, and cannot be edited.
+      #   - "Coursework vocabulary"      — "assignment" in its C# sense.
+      #   - "github.com URL"/"CI badge"/"Copyright" — reviewed; ours.
+      - name: Enforce blocking categories
+        run: |
+          fail=0
+          for category in \
+            "Student zID" \
+            "Student email" \
+            "UNSW staff/AD email" \
+            "Course code" \
+            "Original org/owner in URL" \
+            "API-key-shaped string" \
+            "OpenOnion key format" \
+            "Private key block" \
+            "Committed env file"
+          do
+            if grep -qF "### ${category} —" audit-report.txt; then
+              echo "::error::Blocking category present: ${category}"
+              grep -A5 -F "### ${category} —" audit-report.txt
+              fail=1
+            fi
+          done
+          if [ "$fail" -eq 1 ]; then
+            echo "Audit failed: see the categories above."
+            exit 1
+          fi
+          echo "No blocking categories present."
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-report
+          path: audit-report.txt
+          if-no-files-found: warn

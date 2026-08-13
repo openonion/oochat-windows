@@ -30,11 +30,20 @@ jobs:
         with:
           global-json-file: global.json
 
+      # The solution lives under ConnectOnion.WinUIClient/ and references every
+      # project by relative path; there is no solution file at the repo root, so
+      # bare `dotnet restore` has nothing to act on.
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.sln
 
       - name: Build (Release)
-        run: dotnet build --configuration Release --no-restore
+        run: >
+          dotnet build ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.sln
+          --configuration Release --no-restore
 
+      # UI tests drive a real window and cannot run on a headless runner.
       - name: Test
-        run: dotnet test --configuration Release --no-build --verbosity normal
+        run: >
+          dotnet test ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.sln
+          --configuration Release --no-build --verbosity normal
+          --filter "FullyQualifiedName!~UITests"
