@@ -41,15 +41,20 @@ jobs:
           dotnet restore ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.sln
           -p:Platform=x64
 
+      # PublishReadyToRun is on for every non-Debug configuration, but R2R needs
+      # the runtime pack that only a publish restore pulls in (NETSDK1094). It is
+      # a publish-time optimisation, so turn it off for the build/test pass —
+      # release.yml publishes with it on.
       - name: Build (Release)
         run: >
           dotnet build ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.sln
           --configuration Release --no-restore -p:Platform=x64
+          -p:PublishReadyToRun=false
 
       # UI tests drive a real window and cannot run on a headless runner.
       - name: Test
         run: >
           dotnet test ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.sln
           --configuration Release --no-build --verbosity normal
-          -p:Platform=x64
+          -p:Platform=x64 -p:PublishReadyToRun=false
           --filter "FullyQualifiedName!~UITests"
