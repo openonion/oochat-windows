@@ -17,6 +17,13 @@ REPO="${1:-}"
 [ -d "$REPO" ] || { echo "usage: $0 <repo-path>" >&2; exit 2; }
 cd "$REPO" || exit 2
 
+# `grep` is a shell function in some environments (a ugrep shim with
+# --ignore-files). That shim honours .gitignore, so it silently skips files that
+# are ignored by a rule yet still tracked by git — exactly the files that ship
+# without being audited. Pin the real binary.
+GREP=$(command -v /usr/bin/grep || command -v /bin/grep) || {
+  echo "no system grep found" >&2; exit 2; }
+
 TMP=$(mktemp -d) || exit 2
 trap 'rm -rf "$TMP"' EXIT
 : > "$TMP/block"; : > "$TMP/clean"; : > "$TMP/review"
@@ -39,7 +46,7 @@ MAX_HITS=40
 # scan <tier> <label> <extended-regex> [extra grep args...]
 scan() {
   tier="$1"; label="$2"; pattern="$3"; shift 3
-  hits=$(grep -rInE "$pattern" . "${PRUNE[@]}" "$@" 2>/dev/null | sed 's|^\./||')
+  hits=$("$GREP" -rInE "$pattern" . "${PRUNE[@]}" "$@" 2>/dev/null | sed 's|^\./||')
   [ -z "$hits" ] && return 0
 
   # Via a file, not `printf | head`: head closes the pipe on the Nth line and the
