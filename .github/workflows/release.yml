@@ -235,7 +235,7 @@ jobs:
           Copy-Item (Join-Path $portableRoot '*') $stagedApp -Recurse
           Copy-Item $launcher (Join-Path $stagedRoot 'ConnectOnion.WinUIClient.exe')
 
-          $portable = "artifacts/publish/ConnectOnion.Desktop-${{ steps.version.outputs.version }}-x64-portable.zip"
+          $portable = "artifacts/publish/OOChat-${{ steps.version.outputs.version }}-x64-portable.zip"
           Compress-Archive -Path (Join-Path $stagedRoot '*') `
             -DestinationPath $portable -CompressionLevel Optimal
           "portable=$portable" >> $env:GITHUB_OUTPUT
@@ -325,7 +325,7 @@ jobs:
             "Verify the download before running:",
             "",
             '```powershell',
-            "Get-FileHash .\ConnectOnion.Desktop-${{ steps.version.outputs.version }}-x64-portable.zip -Algorithm SHA256",
+            "Get-FileHash .\OOChat-${{ steps.version.outputs.version }}-x64-portable.zip -Algorithm SHA256",
             '```',
             "",
             'Compare against `SHA256SUMS.txt`.',

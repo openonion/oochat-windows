@@ -17,7 +17,12 @@ namespace ConnectOnion.WinUIClient.UnitTests.Architecture;
 /// </summary>
 public sealed class PackageIdentityTests
 {
-    private const string IdentityName = "ConnectOnion.Desktop";
+    // Changed once, on 2026-08-13, from "ConnectOnion.Desktop" as part of moving this client
+    // under the ConnectOnion organisation. That rename was safe only because there had never
+    // been a public release: no installed base existed, so there was no upgrade path to break.
+    // That exemption is spent. Any future change orphans real users' conversations and agent
+    // identity in the old %LOCALAPPDATA%\Packages\<Name>_<publisher hash>\ folder, silently.
+    private const string IdentityName = "ai.openonion.oochat";
 
     private static XElement Identity()
     {

@@ -44,7 +44,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string] $NewPackage,
 
-    [string] $IdentityName = 'ConnectOnion.Desktop',
+    [string] $IdentityName = 'ai.openonion.oochat',
     [string] $OutDir,
     [switch] $NonInteractive
 )
