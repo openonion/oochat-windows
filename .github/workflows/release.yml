@@ -1,0 +1,117 @@
+name: Release
+
+# Tag-driven. Pushing v1.2.3 builds the app, packages it, and publishes a
+# GitHub Release with the artifacts attached.
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g. 1.2.3) — dry run, does not publish'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build & package
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    strategy:
+      matrix:
+        platform: [x64, arm64]
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -like 'refs/tags/v*') {
+            $v = $env:GITHUB_REF -replace '^refs/tags/v',''
+          } else {
+            $v = '${{ inputs.version }}'
+          }
+          "version=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Building version $v"
+
+      - name: Restore
+        run: dotnet restore -p:Platform=${{ matrix.platform }}
+
+      - name: Build (Release)
+        run: >
+          dotnet build ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.csproj
+          --configuration Release
+          -p:Platform=${{ matrix.platform }}
+          -p:Version=${{ steps.version.outputs.version }}
+
+      - name: Publish self-contained
+        run: >
+          dotnet publish ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.csproj
+          --configuration Release
+          -p:Platform=${{ matrix.platform }}
+          -p:RuntimeIdentifier=win-${{ matrix.platform }}
+          -p:Version=${{ steps.version.outputs.version }}
+          --output publish/${{ matrix.platform }}
+
+      # Unsigned on purpose. Code signing needs a certificate in secrets; wire it
+      # up here when one exists rather than shipping a placeholder that fails.
+      - name: Package
+        shell: pwsh
+        run: |
+          $v = '${{ steps.version.outputs.version }}'
+          $name = "oochat-windows-$v-${{ matrix.platform }}"
+          Compress-Archive -Path publish/${{ matrix.platform }}/* -DestinationPath "$name.zip"
+          (Get-FileHash "$name.zip" -Algorithm SHA256).Hash | Out-File "$name.zip.sha256"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: oochat-windows-${{ matrix.platform }}
+          path: |
+            *.zip
+            *.zip.sha256
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --verify-tag \
+            artifacts/*.zip artifacts/*.zip.sha256

@@ -1,0 +1,30 @@
+name: Pre-publication audit
+
+# Guards the gate between "private repo we are cleaning up" and "public repo a
+# customer clones". It fails on student IDs, course codes, original repository
+# URLs and key-shaped strings. It is not a clearance on its own — it cannot see
+# inside binaries or git history. See the limits it prints at the end of a run.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Scan for inherited traces
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Run audit
+        run: |
+          chmod +x scripts/audit_repo.sh
+          ./scripts/audit_repo.sh .
