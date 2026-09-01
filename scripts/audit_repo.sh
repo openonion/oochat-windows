@@ -149,14 +149,9 @@ EOF
 fi
 
 scan BLOCK "Original org/owner in URL" 'github\.com[/:]((UNSW|unsw)[A-Za-z0-9._-]*)'
-# Anything on github.com that is not one of ours. The UNSW-prefixed rule above
-# misses the common case: a student's PERSONAL account. Found exactly that in an
-# Android README (`github.com/<student>/oo-chat-android-Cake.git`) after the
-# org-prefixed check came back clean.
 # Every github.com URL that is not ours. The UNSW-prefixed rule above misses the
-# common case: a student's PERSONAL account. Found exactly that in an Android
-# README (github.com/<student>/oo-chat-android-Cake.git) after the org-prefixed
-# check came back clean.
+# common case: a contributor's personal fork, so the human-review rule covers
+# every owner and the waiver list records known upstream dependencies.
 #
 # REVIEW rather than BLOCK, and no negative lookahead: BSD grep has no -P, and
 # legitimate upstream links (gradle, roborazzi) live in every Android repo. A
@@ -183,6 +178,21 @@ scan REVIEW "Password/secret assignment" '(password|passwd|secret|api_?key|token
 for f in .env .env.local .env.production; do
   [ -f "$f" ] && note BLOCK "Committed env file" "$f:1: file exists"
 done
+
+# Text scans cannot recognize binary private keys, and ignored files may still
+# be tracked. Block runtime state and credential-shaped filenames explicitly.
+if command -v git >/dev/null 2>&1; then
+  sensitive_files=$(git ls-files | "$GREP" -Ei \
+    '(^|/)(\.runtime|\.co)(/|$)|(^|/)\.env($|\.)|\.(p12|p8|mobileprovision|jks|keystore|pem|key|log)$' | \
+    "$GREP" -Ev '(^|/)\.env\.example$' || true)
+  if [ -n "$sensitive_files" ]; then
+    while IFS= read -r f; do
+      [ -n "$f" ] && note BLOCK "Tracked runtime or credential file" "$f:1: tracked by git"
+    done <<EOF
+$sensitive_files
+EOF
+  fi
+fi
 
 # ---------------------------------------------------------------- 5. our branding
 scan REVIEW "Bundle id / package name" '^[[:space:]]*(applicationId|PRODUCT_BUNDLE_IDENTIFIER|namespace)[[:space:]]*[=:]'

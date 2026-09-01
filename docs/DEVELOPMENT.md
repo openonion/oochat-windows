@@ -742,7 +742,7 @@ All project documentation lives in [`docs/`](./README.md):
 
 | Document | What it is |
 |---|---|
-| [Project brief](./PROJECT_BRIEF.md) | The original requirements, plus a requirement → implementation traceability table and known limitations |
+| [Product requirements](./PROJECT_BRIEF.md) | Public requirements, plus a requirement → implementation traceability table and known limitations |
 | [Test plan](./TEST_PLAN.md) | Layered test strategy, test cases, E2E flows, and the testing backlog |
 | [Session & message structure](./SESSION_MESSAGE_STRUCTURE.md) | The ConnectOnion wire protocol: `CONNECT`/`INPUT`/`OUTPUT`, streaming events, sessions, reconnect |
 | [Commit convention](./GIT_COMMIT_CONVENTION.md) | Conventional Commits types and scopes used in this repo |

@@ -3,7 +3,7 @@
 | Document | What it is | Status |
 |---|---|---|
 | [DEVELOPMENT.md](./DEVELOPMENT.md) | Developer guide: architecture, repository layout, setup, build/test commands, README screenshot regeneration, CI, agent endpoints, and implementation status | Living |
-| [PROJECT_BRIEF.md](./PROJECT_BRIEF.md) | The original client-supplied requirements (verbatim), plus a requirement → implementation traceability table and the current known limitations | Living — update the table, never the brief |
+| [PROJECT_BRIEF.md](./PROJECT_BRIEF.md) | Public product requirements, requirement → implementation traceability, and current known limitations | Living |
 | [TEST_PLAN.md](./TEST_PLAN.md) | Layered test strategy, coverage ratchet, current test-count snapshot, 15 target E2E flows, UI-automation standards, and the owned backlog | Living |
 | [SESSION_MESSAGE_STRUCTURE.md](./SESSION_MESSAGE_STRUCTURE.md) | The ConnectOnion wire protocol: core frames, current extension-frame coverage, streaming, reconnect, and session synchronization | Authoritative for the frames specified in §1–31; the implementation dispatch table defines the complete supported extension set |
 | [GIT_COMMIT_CONVENTION.md](./GIT_COMMIT_CONVENTION.md) | Conventional Commits types and scopes used in this repo | Living |

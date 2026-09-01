@@ -1,12 +1,8 @@
-# 99 - ConnectOnion Windows Desktop Client: Native Access to AI Agents
+# ConnectOnion Windows Desktop Client Requirements
 
-**Client:** ConnectOnion
-**Allowed groups:** 3 groups
-
-> **This is the original project brief, reproduced verbatim.** It is the requirements source, not a
-> description of what was built — do not edit the body to match the implementation. The traceability
-> table immediately below maps each stated requirement to where it is satisfied in this repository,
-> and is the honest current status (including what is *not* done).
+This document records the public product requirements and maps each one to its
+implementation. The traceability table is the current status, including known
+limitations.
 
 ## Requirement → Implementation Traceability
 
@@ -38,8 +34,9 @@
 ### Known limitations (as of this commit)
 
 - WinUI coverage above the headless surfaces now includes 36 required FlaUI shell/chat tests on every push and pull request. Explorer drag-and-drop remains skipped because its source coordinates vary with desktop DPI/layout; OS notification delivery/click and direct tray-icon interaction remain manual (see `TEST_PLAN.md`).
-- The portable ZIP release pipeline has published `v1.0.3`. Clean-profile validation remains a
-  manual gate for each new release; signed MSIX publishing remains paused.
+- The portable ZIP release pipeline publishes from matching semantic-version
+  tags, beginning with `v0.1.1`. Clean-profile validation remains a manual gate
+  for each new release; signed MSIX publishing remains paused.
 - App XAML exposes 158 unique `AutomationId`s; `AutomationContractTests` guards the 53 critical real-window locators and rejects any named interactive control without an ID. Each new real-window flow still adds its app-owned locator to the critical subset.
 - English and Simplified Chinese resource sets exist and are key-parity gated; manual zh-CN layout, text-scaling, and Narrator validation remain open.
 
@@ -57,7 +54,7 @@ The outcome will be a functional Windows application prototype that extends the 
 
 This project focuses on the design and development of a Windows desktop client application for ConnectOnion.
 
-The student team will investigate the existing ConnectOnion open-source framework, documentation, web client and relevant communication mechanisms. Based on this analysis, the team will design an appropriate Windows desktop application architecture and implement an end-to-end client prototype.
+Contributors should investigate the existing ConnectOnion open-source framework, documentation, web client and relevant communication mechanisms. Based on this analysis, they should design an appropriate Windows desktop application architecture and implement an end-to-end client.
 
 The minimum project scope includes:
 
@@ -77,7 +74,7 @@ Optional extensions may include system tray integration, desktop notifications, 
 
 ## Project requirements
 
-The student team is expected to design and implement a functional, maintainable and testable Windows desktop client for accessing ConnectOnion AI agents.
+Contributors are expected to design and implement a functional, maintainable and testable Windows desktop client for accessing ConnectOnion AI agents.
 
 ### Core functional requirements
 
@@ -121,7 +118,7 @@ The project should include testing for key functionality, including communicatio
 - Conversation history and agent configuration management.
 - User-friendly connection and error handling.
 - Testing evidence and technical documentation.
-- Final demonstration and handover report.
+- Release notes and maintenance documentation.
 
 ### Optional stretch goals
 
@@ -134,7 +131,7 @@ The project should include testing for key functionality, including communicatio
 
 ## Required knowledge and skills
 
-Students should possess or be willing to develop skills in:
+Contributors should possess or be willing to develop skills in:
 
 - Software engineering, version control, testing and technical documentation.
 - Desktop application development using an appropriate framework.

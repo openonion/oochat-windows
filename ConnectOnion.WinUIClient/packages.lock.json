@@ -743,7 +743,7 @@
         "type": "Project",
         "dependencies": {
           "CommunityToolkit.Mvvm": "[8.4.2, )",
-          "ConnectOnion.Protocol": "[0.1.0, )",
+          "ConnectOnion.Protocol": "[0.1.1, )",
           "Microsoft.Data.Sqlite.Core": "[10.0.10, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
           "SQLitePCLRaw.provider.winsqlite3": "[3.0.5, )",

@@ -83,6 +83,13 @@ dotnet test  --configuration Release
 
 Produces an unsigned WinUI 3 desktop application plus its test results.
 
+## Releases
+
+Semantic version tags publish a tested, self-contained x64 portable ZIP and
+`SHA256SUMS.txt`; no separate .NET or Windows App SDK installation is required.
+See [docs/RELEASE.md](docs/RELEASE.md) for version updates, the no-publish dry
+run, package gates and checksum verification.
+
 ## Make it yours
 
 The four places that carry our identity. Change these and it is your app:

@@ -63,10 +63,20 @@ jobs:
             throw "Tag '$version' is not v<major>.<minor>.<patch>[-prerelease]."
           }
           $semver = $version.TrimStart('v')
+          $baseVersion = $semver.Split('-')[0]
+          $sourceVersion = (Select-Xml -Path 'Directory.Build.props' `
+            -XPath '/Project/PropertyGroup/VersionPrefix').Node.InnerText
+          if ($sourceVersion -ne $baseVersion) {
+            throw "Tag '$version' does not match VersionPrefix '$sourceVersion'."
+          }
           "version=$version"   >> $env:GITHUB_OUTPUT
           "semver=$semver"     >> $env:GITHUB_OUTPUT
           # A prerelease tag publishes as a GitHub prerelease.
           "prerelease=$(if ($semver -match '-') { 'true' } else { 'false' })" >> $env:GITHUB_OUTPUT
+
+      - name: Run pre-publication audit
+        shell: bash
+        run: ./scripts/audit_repo.sh .
 
       - name: Set up .NET
         uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5

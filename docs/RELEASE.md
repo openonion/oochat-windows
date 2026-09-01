@@ -21,25 +21,36 @@ GitHub Release is created.
 
 ## Versioning
 
-`Directory.Build.props` holds `VersionPrefix`, the local-development default.
-The release workflow overrides the application version from the `v*` tag:
+`Directory.Build.props` holds `VersionPrefix`, which must be bumped in the
+release commit. The release workflow verifies the tag against it and then
+overrides the application version from the complete `v*` tag:
 
 ```text
 v1.2.3       -> 1.2.3
 v1.2.3-rc.1  -> 1.2.3-rc.1 (GitHub prerelease)
 ```
 
+After changing `VersionPrefix`, refresh the committed NuGet locks with the
+repository's exact SDK before pushing:
+
+```powershell
+dotnet restore ConnectOnion.WinUIClient/ConnectOnion.WinUIClient.sln --force-evaluate
+```
+
+Then let `main` CI pass and run the Release workflow manually with the intended
+tag as a dry run. Only pushing the actual tag publishes a GitHub Release.
+
 The release asset keeps the complete tag in its filename:
 
 ```text
-ConnectOnion.Desktop-v1.2.3-x64-portable.zip
+OOChat-v1.2.3-x64-portable.zip
 ```
 
 ## What the release contains
 
 | Asset | Purpose |
 |---|---|
-| `ConnectOnion.Desktop-v<version>-x64-portable.zip` | Self-contained unpackaged app |
+| `OOChat-v<version>-x64-portable.zip` | Self-contained unpackaged app |
 | `SHA256SUMS.txt` | SHA-256 checksum for the published ZIP |
 
 The ZIP root contains only `ConnectOnion.WinUIClient.exe` and the `app\` folder. The root EXE is a

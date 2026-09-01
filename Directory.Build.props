@@ -13,7 +13,7 @@
     development build never claims to be a version that shipped.
   -->
   <PropertyGroup>
-    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionPrefix>0.1.1</VersionPrefix>
 
     <!--
       Pin the Windows SDK targeting pack independently of the installed .NET SDK. SDK 10.0.301
