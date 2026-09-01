@@ -283,7 +283,14 @@ jobs:
           }
           if ($lines.Count -eq 0) { throw "Nothing staged to checksum." }
           $path = 'artifacts/publish/SHA256SUMS.txt'
-          $lines | Out-File -FilePath $path -Encoding ascii
+          # SHA256SUMS is consumed by macOS/Linux `sha256sum -c` as well as
+          # PowerShell. Write explicit LF endings so the filename never gains a
+          # trailing carriage return on non-Windows systems.
+          [System.IO.File]::WriteAllText(
+            $path,
+            ($lines -join "`n") + "`n",
+            [System.Text.Encoding]::ASCII
+          )
           Get-Content $path | Write-Host
           "file=$path" >> $env:GITHUB_OUTPUT
 
