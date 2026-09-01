@@ -18,11 +18,13 @@ ConnectOnion.Protocol/          endpoint    # EndpointResolver must recognise lo
 
 ConnectOnion.Protocol/          Team        # Bip39EnglishWordlist.txt is the real BIP39 wordlist; "cake", "bread" and "banana" are entries in it and cannot be edited.
 ConnectOnion.WinUIClient.Core/  Team        # "bread" inside remote_read_file in a regex-boundary comment.
+.github/                        Team        # The audit workflow documents the reviewed Team-name exception above.
 
 tests/                          Coursework  # "assignment" in its C# sense (assignment statement).
 docs/                           Coursework  # Same usage in engineering prose.
 ConnectOnion.WinUIClient/       Coursework  # Same usage in code comments.
 ConnectOnion.WinUIClient.Core/  Coursework  # Same usage in code comments.
+.github/                        Coursework  # The audit workflow documents the reviewed Coursework-vocabulary exception above.
 
 docs/                           Group       # "§11" and "a11y" match the letter-2digits-letter group-code shape.
 ConnectOnion.WinUIClient/       Group       # "a11y" in an accessibility comment.
