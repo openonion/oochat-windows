@@ -291,6 +291,9 @@ jobs:
             ($lines -join "`n") + "`n",
             [System.Text.Encoding]::ASCII
           )
+          if ([System.IO.File]::ReadAllBytes($path) -contains 13) {
+            throw 'SHA256SUMS.txt contains CR bytes; it must be LF-only.'
+          }
           Get-Content $path | Write-Host
           "file=$path" >> $env:GITHUB_OUTPUT
 
