@@ -705,7 +705,8 @@ public sealed partial class ChatMessage
     [JsonIgnore]
     public bool IsTranscriptRowVisible
         => !(IsAskUserEvent && RelatedDiffPreview is not null && Status == EventStatus.Running)
-            && !IsWithdrawnDiffPreview;
+            && !IsWithdrawnDiffPreview
+            && !IsTurnUsageEvent;
 
     /// <summary>A diff that has done its job: its decision is settled and the file reached a
     /// terminal, unsurprising state. It leaves the transcript rather than sitting there as a

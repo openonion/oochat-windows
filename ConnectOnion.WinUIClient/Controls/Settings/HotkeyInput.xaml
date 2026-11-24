@@ -8,14 +8,20 @@
     mc:Ignorable="d">
 
     <Button x:Name="CaptureButton" AutomationProperties.AutomationId="CaptureButton"
+            Style="{StaticResource CardButtonStyle}"
+            Background="{ThemeResource ControlFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+            CornerRadius="4"
+            Padding="10,5"
             MinWidth="150"
+            MinHeight="0"
             HorizontalContentAlignment="Center"
             Click="CaptureButton_Click"
             PreviewKeyDown="CaptureButton_PreviewKeyDown"
             LostFocus="CaptureButton_LostFocus">
         <TextBlock x:Name="ChordText"
                    FontFamily="{StaticResource JetBrainsMonoFontFamily}"
-                   FontSize="{StaticResource ProductCaptionFontSize}"
+                   FontSize="{StaticResource ProductCodeFontSize}"
                    TextAlignment="Center" />
     </Button>
 </UserControl>

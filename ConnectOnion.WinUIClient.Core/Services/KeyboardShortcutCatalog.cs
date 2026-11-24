@@ -64,7 +64,7 @@ public static class KeyboardShortcutCatalog
     private const int Backtick = 192;
     private const int OpenBracket = 219;
     private const int CloseBracket = 221;
-    private const int Equal = 187;
+    private const int Plus = 187;
     private const int Minus = 189;
     private const int Slash = 191;
     private const int F11 = 122;
@@ -97,7 +97,7 @@ public static class KeyboardShortcutCatalog
             Custom(Ids.Find, "Find", Ctrl('F')),
             Custom(Ids.GoBack, "Go back", Ctrl(OpenBracket)),
             Custom(Ids.GoForward, "Go forward", Ctrl(CloseBracket)),
-            Custom(Ids.ZoomIn, "Zoom in", CtrlShift(Equal)),
+            Custom(Ids.ZoomIn, "Zoom in", Ctrl(Plus)),
             Custom(Ids.ZoomOut, "Zoom out", Ctrl(Minus)),
             Custom(Ids.ToggleFullScreen, "Toggle full screen", Plain(F11)),
         }),

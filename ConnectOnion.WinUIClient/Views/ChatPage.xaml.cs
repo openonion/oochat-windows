@@ -70,6 +70,13 @@ public sealed partial class ChatPage : Page, IFindHost, IShutdownDisarmable, IDi
         Unloaded += OnUnloaded;
     }
 
+    // gets the workroom id and opens the according workrook page
+    private void WorkRoomOpen_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string workRoomId } || string.IsNullOrWhiteSpace(workRoomId)) return;
+        Frame?.Navigate(typeof(WorkRoomPage), workRoomId);
+    }
+
     /// <summary>
     /// Stops everything on this page that could still fire after the window closes. Called from
     /// <c>MainWindow.DetachWindowServices</c> on the real exit path, because <see cref="OnUnloaded"/>
@@ -228,6 +235,12 @@ public sealed partial class ChatPage : Page, IFindHost, IShutdownDisarmable, IDi
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        if (e.NavigationMode != NavigationMode.New)
+        {
+            _pendingInitialSubmission = null;
+            return;
+        }
+
         var parameter = e.Parameter is ShellNavigationContext context
             ? context.Payload
             : e.Parameter;

@@ -18,45 +18,6 @@
                 HorizontalAlignment="Center"
                 Spacing="6"
                 Width="{StaticResource ChatComposerWidth}">
-        <!-- Suggestions stay reachable at every supported width. A horizontal rail preserves a
-             single compact row instead of removing onboarding entirely on a narrow window. -->
-        <ScrollViewer x:Name="SuggestionScroller"
-                      Visibility="Collapsed"
-                      HorizontalScrollMode="Enabled"
-                      HorizontalScrollBarVisibility="Hidden"
-                      VerticalScrollMode="Disabled"
-                      VerticalScrollBarVisibility="Disabled"
-                      HorizontalContentAlignment="Center">
-            <Grid Padding="2,0">
-                <!-- The agent's own best skills lead; generic starters fill any empty slots. -->
-                <ItemsControl x:Name="SuggestionList"
-                              Visibility="Collapsed"
-                              HorizontalAlignment="Center">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" Spacing="8" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="controls:ComposerSuggestion">
-                            <!-- Compiled binding is trim-safe. Classic Binding reaches these
-                                 internal suggestion properties by reflection, so the linker can
-                                 remove Prompt even though clicking the chip still fires. -->
-                            <Button Content="{x:Bind Label, Mode=OneTime}"
-                                    Tag="{x:Bind Prompt, Mode=OneTime}"
-                                    AutomationProperties.AutomationId="SuggestionButton"
-                                    MinHeight="36"
-                                    Padding="14,6"
-                                    CornerRadius="18"
-                                    Background="{ThemeResource SurfaceElevatedBrush}"
-                                    BorderBrush="{ThemeResource BorderDefaultBrush}"
-                                    BorderThickness="1"
-                                    Click="Suggestion_Click" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </Grid>
-        </ScrollViewer>
 
         <!-- Slash-command palette: the agent's own skills, filtered as the user types after "/".
              Sits directly above the input because it completes what is being typed there, and it
@@ -98,7 +59,7 @@
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock FontSize="{StaticResource ProductBodyFontSize}"
+                                <TextBlock FontSize="{StaticResource ProductCodeFontSize}"
                                            FontWeight="SemiBold"
                                            FontFamily="{StaticResource JetBrainsMonoFontFamily}"
                                            VerticalAlignment="Center"><Run Text="/" /><Run Text="{Binding Name}" /></TextBlock>
@@ -636,6 +597,22 @@
                             VerticalContentAlignment="Center"
                             Click="Send_Click"
                             ToolTipService.ToolTip="Send message">
+                        <Button.Resources>
+                            <ResourceDictionary>
+                                <ResourceDictionary.ThemeDictionaries>
+                                    <ResourceDictionary x:Key="HighContrast">
+                                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
+                                                         Color="{ThemeResource SystemColorHighlightColor}" />
+                                        <SolidColorBrush x:Key="ButtonBackgroundPressed"
+                                                         Color="{ThemeResource SystemColorHighlightColor}" />
+                                    </ResourceDictionary>
+                                </ResourceDictionary.ThemeDictionaries>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
+                                                 Color="{ThemeResource BrandPrimaryHoverColor}" />
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed"
+                                                 Color="{ThemeResource BrandPrimaryPressedColor}" />
+                            </ResourceDictionary>
+                        </Button.Resources>
                         <Grid Width="20" Height="20">
                             <ic:FluentIcon x:Name="SendIcon"
                                            Icon="ArrowUp"
@@ -747,5 +724,47 @@
                 </Grid>
             </Grid>
         </Border>
+
+         <!-- Suggestions stay reachable at every supported width. A horizontal rail preserves a
+             single compact row instead of removing onboarding entirely on a narrow window. -->
+        <ScrollViewer x:Name="SuggestionScroller"
+                      Margin="0,8,0,0"
+                      Visibility="Collapsed"
+                      HorizontalScrollMode="Enabled"
+                      HorizontalScrollBarVisibility="Hidden"
+                      VerticalScrollMode="Disabled"
+                      VerticalScrollBarVisibility="Disabled"
+                      HorizontalContentAlignment="Center">
+            <Grid Padding="2,0">
+                <!-- The agent's own best skills lead; generic starters fill any empty slots. -->
+                <ItemsControl x:Name="SuggestionList"
+                              Visibility="Collapsed"
+                              HorizontalAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="8" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="controls:ComposerSuggestion">
+                            <!-- Compiled binding is trim-safe. Classic Binding reaches these
+                                 internal suggestion properties by reflection, so the linker can
+                                 remove Prompt even though clicking the chip still fires. -->
+                            <Button Content="{x:Bind Label, Mode=OneTime}"
+                                    Tag="{x:Bind Prompt, Mode=OneTime}"
+                                    AutomationProperties.AutomationId="SuggestionButton"
+                                    MinHeight="36"
+                                    Padding="14,6"
+                                    CornerRadius="18"
+                                    Background="Transparent"
+                                    BorderBrush="{ThemeResource BorderDefaultBrush}"
+                                    BorderThickness="1"
+                                    Click="Suggestion_Click" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </ScrollViewer>
+
     </StackPanel>
 </UserControl>

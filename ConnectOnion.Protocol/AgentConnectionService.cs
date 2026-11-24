@@ -37,7 +37,7 @@ public sealed class AgentConnectionService : IAsyncDisposable
     private const int SilenceTimeoutMs = 60_000;
     private const int WatchdogIntervalMs = 10_000;
 
-    private readonly string _address;
+    private string _address;
     private readonly string? _directUrl;
     private readonly string _relayUrl;
     private readonly AgentIdentity _identity;
@@ -75,6 +75,7 @@ public sealed class AgentConnectionService : IAsyncDisposable
     /// This is what lets a user answer an ask_user during an outage — the answer waits for the
     /// socket rather than vanishing into a failed send.</summary>
     private readonly ConcurrentQueue<Dictionary<string, object?>> _outbound = new();
+    private const int MaxSessionSyncTraceEvents = 512;
 
     public string? SessionId { get; private set; }
 
@@ -110,6 +111,9 @@ public sealed class AgentConnectionService : IAsyncDisposable
 
     /// <summary>Streamed intermediate events (thinking, tool_call, …) for status UI.</summary>
     public event Action<AgentStreamEvent>? StreamEvent;
+
+    /// <summary>The latest dashboard page sent by the agent's Host. It's not sent to the chat</summary>
+    public event Action<DashboardSnapshot>? DashboardSnapshotReceived;
 
     /// <summary>Raised immediately after an INPUT frame is written to the live socket.</summary>
     public event Action? InputSent;
@@ -194,6 +198,38 @@ public sealed class AgentConnectionService : IAsyncDisposable
 
         if (_directUrl is not null)
         {
+            if (string.IsNullOrWhiteSpace(_address))
+            {
+                var uri = new Uri(_directUrl);
+                var infoUri = new UriBuilder(uri)
+                {
+                    Path = uri.AbsolutePath.TrimEnd('/') + "/info",
+                    Query = null,
+                    Fragment = null
+                }.Uri;
+
+                var response = await _http.GetAsync(infoUri, ct);
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync(ct);
+                using var doc = JsonDocument.Parse(json);
+
+                if (doc.RootElement.TryGetProperty("address", out var addrProp) &&
+                    addrProp.ValueKind == JsonValueKind.String)
+                {
+                    var rawAddress = addrProp.GetString();
+                    if (!string.IsNullOrWhiteSpace(rawAddress))
+                    {
+                        _address = rawAddress.Trim();
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(_address))
+                {
+                    throw new InvalidOperationException("Could not get a valid address from the agent info endpoint");
+                }
+            }
+
             _wsUrl = DirectWsUrl(_directUrl);
             _isDirect = true;
             return;
@@ -286,18 +322,18 @@ public sealed class AgentConnectionService : IAsyncDisposable
         inputMsg.Clear();
         InputSent?.Invoke();
 
-        // Mode has to be (re)asserted *after* the INPUT, never before. The host only forwards
-        // a mode_change to the agent while a turn owns the connection (`active_io` in its
-        // ws_router); sent on an idle socket it is dropped on the floor. Sending it here — on
-        // the same socket, immediately behind the INPUT that spawns the agent — means the
-        // host's sequential read loop has an agent to hand it to, and the agent's
-        // `poll_mode_changes` (a before_iteration hook) picks it up at its first iteration
-        // boundary. This is also why a CONNECT-only mode is not enough for a session the host
-        // already knows: its session merge would have thrown ours away.
-        if (mode is not null) await SendModeChangeAsync(mode, null, ct).ConfigureAwait(false);
+        // The mode is carried on the CONNECT (see InitialMode) rather than re-asserted with a
+        // separate mode_change frame behind the INPUT: that follow-up frame interfered with
+        // agent connections, so it is no longer sent.
 
         return AwaitInputAsync(inputTcs, ct);
     }
+
+    /// <summary>Authenticates this connection and receives the Host's dashboard without
+    /// using chat. When <paramref name="sessionId"/> is null the Host creates a new
+    /// session, which the connection reuses if it reconnects later.</summary>
+    public Task ConnectAsync(string? sessionId = null, CancellationToken ct = default)
+        => EnsureConnectedAsync(sessionId, ct);
 
     private static async Task<string> AwaitInputAsync(
         TaskCompletionSource<string> inputTcs,
@@ -386,6 +422,45 @@ public sealed class AgentConnectionService : IAsyncDisposable
     {
         if (!IsConnected) throw new InvalidOperationException("Cannot stop: the agent connection is not open.");
         return SendJsonAsync(new Dictionary<string, object?> { ["type"] = "INTERRUPT" }, ct);
+    }
+
+    // checks for a valid connection and workroom request before signing and sending a workroom request to the provider
+    public Task SendProviderRequestAsync(string requestType, IReadOnlyList<KeyValuePair<string, object?>> fields, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(fields);
+
+        if (!IsConnected)
+            throw new InvalidOperationException("The agent is not connected. Reconnect to the agent before making a workroom request.");
+
+        if (requestType is not ("PROVIDER_INPUT" or "PROVIDER_INTERRUPT"
+            or "PROVIDER_PERMISSION_CHANGE" or "PROVIDER_APPROVAL_RESPONSE"))
+            throw new ArgumentOutOfRangeException(nameof(requestType), "Unsupported provider workroom request.");
+
+        var payload = new List<KeyValuePair<string, object?>>(fields.Count + 2);
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var field in fields)
+        {
+            if (field.Key is "timestamp" or "to" || !keys.Add(field.Key))
+                throw new ArgumentException("Workroom request contains a reserved or duplicate key.", nameof(fields));
+            payload.Add(field);
+        }
+
+        payload.Add(new("timestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds()));
+        payload.Add(new("to", _address));
+
+        var envelope = _identity.SignPayload(payload);
+        var message = new Dictionary<string, object?>
+        {
+            ["type"] = requestType,
+            ["payload"] = envelope.Payload,
+            ["from"] = envelope.From,
+            ["signature"] = envelope.Signature,
+            ["timestamp"] = envelope.Timestamp,
+        };
+
+        if (!_isDirect) message["to"] = _address;
+        return SendJsonAsync(message, ct);
     }
 
     /// <summary>
@@ -645,11 +720,10 @@ public sealed class AgentConnectionService : IAsyncDisposable
     private static AskUserRequest ParseAskUser(WireMessage msg) => AgentInteractiveParsers.ParseAskUser(msg);
 
     /// <summary>
-    /// A 50 MiB agent image expands to about 66.7 MiB as base64. Leave room for its data-URL
-    /// prefix and JSON envelope, but reject an unbounded or never-ending frame before it can
-    /// exhaust the desktop process.
+    /// Encoded dashboard data can reach 256 MiB. Cap incoming frames at that size to limit
+    /// memory use if a frame stalls.
     /// </summary>
-    public const int MaxIncomingFrameBytes = 80 * 1024 * 1024;
+    public const int MaxIncomingFrameBytes = 256 * 1024 * 1024;
     private const int RetainedIncomingFrameCapacityBytes = 1024 * 1024;
 
     internal int IncomingFrameSizeLimitBytes { get; set; } = MaxIncomingFrameBytes;
@@ -695,8 +769,8 @@ public sealed class AgentConnectionService : IAsyncDisposable
                 if (!result.EndOfMessage) continue;
 
                 // JSON is already UTF-8 on the wire. Parse this buffer in place while it remains
-                // owned by the loop; turning an 80 MiB frame into a UTF-16 string allocated up to
-                // another 160 MiB before JsonDocument copied it back into UTF-8 storage.
+                // owned by the loop; turning a 256 MiB frame into a UTF-16 string would allocate
+                // another 512 MiB before JsonDocument copied it back into UTF-8 storage.
                 var json = new ReadOnlyMemory<byte>(
                     frame.GetBuffer(),
                     0,
@@ -768,6 +842,25 @@ public sealed class AgentConnectionService : IAsyncDisposable
                     return;
                 }
 
+            case "DASHBOARD_SNAPSHOT":
+                {
+                    var html = msg.GetString("html");
+                    if (html is null || Encoding.UTF8.GetByteCount(html) > 128 * 1024 * 1024)
+                        return;
+
+                    try
+                    {
+                        DashboardSnapshotReceived?.Invoke(new DashboardSnapshot(
+                            html,
+                            msg.GetString("session_id")));
+                    }
+                    catch
+                    {
+                        // Ignore subscriber errors so the agent connection stays open.
+                    }
+                    return;
+                }
+
             case "ERROR":
                 // Whatever the agent was parked on is over — don't leave the watchdog suspended.
                 _awaitingHumanResponse = false;
@@ -790,6 +883,20 @@ public sealed class AgentConnectionService : IAsyncDisposable
             case "compact":
             case "tool_blocked":
             case "files_received":
+
+            // workroom states provided in https://github.com/openonion/connectonion/issues/1109
+            case "provider_session":
+            case "provider_invocation":
+            case "provider_activity":
+            case "provider_approval":
+            case "provider_artifact":
+            case "provider_continuation":
+            case "provider_interrupt":
+            case "provider_error":
+            case "provider_message":
+            case "provider_phase":
+            case "PROVIDER_INPUT_ACK":
+            case "PROVIDER_PERMISSION_ACK":
             // Informational only — DiffWriter sends it and moves straight on to a separate
             // ask_user carrying the actual approve/reject options. It renders as a read-only
             // diff card; answering *this* frame would send a response nothing is waiting on and
@@ -797,11 +904,18 @@ public sealed class AgentConnectionService : IAsyncDisposable
             case "diff_preview":
             case "session_sync":
                 {
+                    if (msg.Type == "session_sync")
+                        PublishSessionSyncWorkRoomEvents(msg.Root);
+
                     var eventId = msg.GetString("id");
+
                     if (!string.IsNullOrEmpty(eventId))
                         LastProcessedEventId = eventId;
+
+                    var eventType = msg.Type.ToLowerInvariant();
+
                     StreamEvent?.Invoke(new AgentStreamEvent(
-                        msg.Type,
+                        eventType,
                         DescribeEvent(msg),
                         eventId,
                         BufferedEventJson(msg),
@@ -917,6 +1031,54 @@ public sealed class AgentConnectionService : IAsyncDisposable
 
         return WireJson.Serialize(compact);
     }
+
+    // tries to find workroom events in a given frame and forwards the trace to the function below
+    private void PublishSessionSyncWorkRoomEvents(JsonElement frame)
+    {
+        if (frame.ValueKind != JsonValueKind.Object) return;
+
+        if (frame.TryGetProperty("session", out var session) && session.ValueKind == JsonValueKind.Object && session.TryGetProperty("trace", out var sessionTrace))
+            PublishSessionSyncTraceArray(sessionTrace);
+
+        if (frame.TryGetProperty("trace", out var topLevelTrace))
+            PublishSessionSyncTraceArray(topLevelTrace);
+    }
+
+    // given a trace, validate and publish workroom events in it
+    private void PublishSessionSyncTraceArray(JsonElement trace)
+    {
+        if (trace.ValueKind != JsonValueKind.Array || trace.GetArrayLength() == 0) return;
+
+        var firstIndex = Math.Max(0, trace.GetArrayLength() - MaxSessionSyncTraceEvents);
+
+        for (var index = firstIndex; index < trace.GetArrayLength(); index++)
+        {
+            var item = trace[index];
+            if (item.ValueKind != JsonValueKind.Object || item.GetRawText().Length > 64 * 1024
+                || !item.TryGetProperty("type", out var typeValue)
+                || typeValue.ValueKind != JsonValueKind.String) continue;
+
+            var type = typeValue.GetString();
+            if (type is null || !IsProviderWorkRoomEventType(type) || type != "provider_message" && (!item.TryGetProperty("workroomId", out var workroomId) || workroomId.ValueKind != JsonValueKind.String)) continue;
+
+            var rawJson = item.GetRawText();
+            string? eventId = null;
+            if (item.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String)
+                eventId = idValue.GetString();
+
+            StreamEvent?.Invoke(new AgentStreamEvent(type, type, eventId, rawJson, EventTimestamp(item))
+            {
+                IsSessionSyncReplay = true,
+            });
+        }
+    }
+
+    // checks if given string is a valid workroom event
+    private static bool IsProviderWorkRoomEventType(string type) => type is
+        "provider_session" or "provider_invocation" or "provider_activity" or
+        "provider_approval" or "provider_artifact" or "provider_continuation" or
+        "provider_input_ack" or "provider_permission_ack" or "provider_interrupt" or "provider_error" or "provider_message" or
+        "provider_phase";
 
     private static string CompactToolResult(WireMessage msg)
     {

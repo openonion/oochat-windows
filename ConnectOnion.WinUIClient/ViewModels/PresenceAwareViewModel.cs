@@ -62,6 +62,9 @@ public abstract partial class PresenceAwareViewModel : Common.ObservableObject
     /// <summary>True while a reachability probe is in flight (or a manual recheck is starting) — drives the offline bar's spinner.</summary>
     public bool IsCheckingPresence => _isManualRecheck || Presence == AgentPresence.Checking;
     public string PresenceDetail => PresenceAgent is null ? "" : PresenceService.GetDetail(PresenceAgent.Id);
+    /// <summary><see cref="PresenceDetail"/> for a tooltip: null rather than empty, because an
+    /// empty-string tooltip still opens as a blank box.</summary>
+    public string? PresenceDetailToolTip => string.IsNullOrWhiteSpace(PresenceDetail) ? null : PresenceDetail;
     public string PresenceLabel => Presence switch
     {
         AgentPresence.Online => LocalizedStrings.Get("PresenceOnline", "Online"),
@@ -142,6 +145,7 @@ public abstract partial class PresenceAwareViewModel : Common.ObservableObject
         OnPropertyChanged(nameof(ShowOfflineNotice));
         OnPropertyChanged(nameof(IsCheckingPresence));
         OnPropertyChanged(nameof(PresenceDetail));
+        OnPropertyChanged(nameof(PresenceDetailToolTip));
         OnPropertyChanged(nameof(PresenceLabel));
         OnPresenceRaised();
     }

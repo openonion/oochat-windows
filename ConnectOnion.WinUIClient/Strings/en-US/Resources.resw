@@ -66,7 +66,7 @@
   <data name="MenuActualSize.Text" xml:space="preserve"><value>Actual Size</value></data>
   <data name="MenuFullScreen.Text" xml:space="preserve"><value>Toggle Full Screen</value></data>
   <data name="MenuKeyboardShortcuts.Text" xml:space="preserve"><value>Keyboard shortcuts</value></data>
-  <data name="MenuDocs.Text" xml:space="preserve"><value>ConnectOnion Docs</value></data>
+  <data name="MenuDocs.Text" xml:space="preserve"><value>ConnectOnion Manual</value></data>
   <data name="MenuAbout.Text" xml:space="preserve"><value>About ConnectOnion</value></data>
   <data name="FindSearch.PlaceholderText" xml:space="preserve"><value>Search chat...</value></data>
   <data name="ZoomReset.Text" xml:space="preserve"><value>Reset</value></data>
@@ -196,11 +196,6 @@
   <data name="UsageEmpty.Text" xml:space="preserve"><value>No usage recorded yet</value></data>
   <data name="UsageEmptyHint.Text" xml:space="preserve"><value>Token usage appears here after an agent replies.</value></data>
   <data name="UsageClear.Content" xml:space="preserve"><value>Clear usage history</value></data>
-  <data name="AgentsSettingsDescription.Text" xml:space="preserve"><value>Manage the agents connected to this device. Removing an agent also removes its local conversations.</value></data>
-  <data name="AgentsSettingsConnectAnother.Text" xml:space="preserve"><value>Connect another agent to start new conversations.</value></data>
-  <data name="AgentsSettingsAdd.Text" xml:space="preserve"><value>Add agent</value></data>
-  <data name="AgentsSettingsEmpty.Text" xml:space="preserve"><value>No agents connected</value></data>
-  <data name="AgentsSettingsEmptyHint.Text" xml:space="preserve"><value>Add an agent to start a conversation.</value></data>
   <data name="IdentityDescription.Text" xml:space="preserve"><value>This desktop client uses an Ed25519 identity to sign ConnectOnion messages. Agents recognize you by the address below.</value></data>
   <data name="IdentityAddress.Text" xml:space="preserve"><value>Address</value></data>
   <data name="IdentityPublicKey.Text" xml:space="preserve"><value>Public key</value></data>
@@ -355,6 +350,7 @@
   <data name="RecoveryPhraseTitle" xml:space="preserve"><value>Recovery phrase</value></data>
   <data name="RecoveryPhraseWarning" xml:space="preserve"><value>Anyone with these words controls this identity. Never share them, and never paste them into a chat.</value></data>
   <data name="RecoveryCopyPhrase" xml:space="preserve"><value>Copy phrase</value></data>
+  <data name="ShowQRCode" xml:space="preserve"><value>Show QR code</value></data>
   <data name="RecoveryPrivateKeyTitle" xml:space="preserve"><value>Private key</value></data>
   <data name="RecoveryPrivateKeyWarning" xml:space="preserve"><value>Anyone with this key controls this identity. Never share it, and never paste it into a chat.</value></data>
   <data name="RecoveryCopyPrivateKey" xml:space="preserve"><value>Copy private key</value></data>

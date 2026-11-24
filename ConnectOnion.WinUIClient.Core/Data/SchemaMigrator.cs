@@ -499,6 +499,14 @@ internal static class SchemaMigrator
     {
         var current = await ReadVersionAsync(connection).ConfigureAwait(false);
 
+        if (current == 13 && await TableExistsAsync(connection, null, "provider_workrooms").ConfigureAwait(false))
+        {
+            await using var compatibleVersion = connection.CreateCommand();
+            compatibleVersion.CommandText = "PRAGMA user_version = 12;";
+            await compatibleVersion.ExecuteNonQueryAsync().ConfigureAwait(false);
+            current = 12;
+        }
+
         // 0 means "never versioned": a newly created database already has the baseline shape,
         // while older builds may be missing baseline columns or still store message history in
         // conversation envelopes. Repair/import inside one transaction, then stamp version 1.
@@ -684,7 +692,7 @@ internal static class SchemaMigrator
 
     private static async Task<bool> TableExistsAsync(
         SqliteConnection connection,
-        SqliteTransaction transaction,
+        SqliteTransaction? transaction,
         string table)
     {
         await using var command = connection.CreateCommand();

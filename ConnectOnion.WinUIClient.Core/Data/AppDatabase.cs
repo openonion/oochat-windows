@@ -83,6 +83,7 @@ public static class AppDatabase
             // SchemaMigrator is for. See its doc comment before changing any table above.
             await CreateSchemaAsync(connection).ConfigureAwait(false);
             await SchemaMigrator.ApplyAsync(connection).ConfigureAwait(false);
+            await EnsureWorkRoomSchemaAsync(connection).ConfigureAwait(false);
 
             _initialized = true;
         }
@@ -246,6 +247,22 @@ public static class AppDatabase
                 address TEXT NOT NULL,
                 private_seed TEXT NOT NULL
             );
+            """).ConfigureAwait(false);
+    }
+
+    // creates the local workroom table and conversation index upon initialisation of the db
+    private static async Task EnsureWorkRoomSchemaAsync(SqliteConnection connection)
+    {
+        await ExecuteAsync(connection, """
+            CREATE TABLE IF NOT EXISTS provider_workrooms (
+                workroom_id TEXT PRIMARY KEY,
+                conversation_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+                updated_at INTEGER NOT NULL,
+                state_json TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS ix_provider_workrooms_conversation
+                ON provider_workrooms(conversation_id, updated_at, workroom_id);
             """).ConfigureAwait(false);
     }
 

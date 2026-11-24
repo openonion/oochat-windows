@@ -13,6 +13,8 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WindowsPackageType Condition="'$(RunUnpackaged)' == 'true'">None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
     <Nullable>enable</Nullable>
 
     <!-- A custom entry point (Program.cs) enforces single-instance: a second launch
@@ -27,6 +29,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Dashboard\DashboardShell.html"
+                      LogicalName="ConnectOnion.WinUIClient.Dashboard.DashboardShell.html" />
+    <EmbeddedResource Include="Dashboard\DashboardBridge.js"
+                      LogicalName="ConnectOnion.WinUIClient.Dashboard.DashboardBridge.js" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\Square150x150Logo.scale-100.png" />

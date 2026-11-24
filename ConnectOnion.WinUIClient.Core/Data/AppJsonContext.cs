@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using ConnectOnion.WinUIClient.Models;
 using ConnectOnion.WinUIClient.Models.Notifications;
 
 namespace ConnectOnion.WinUIClient.Data;
@@ -23,4 +24,5 @@ namespace ConnectOnion.WinUIClient.Data;
 [JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(NotificationSettings))]
 [JsonSerializable(typeof(LegacyConversationEnvelope))]
+[JsonSerializable(typeof(ProviderWorkRoom))]
 public sealed partial class AppJsonContext : JsonSerializerContext;

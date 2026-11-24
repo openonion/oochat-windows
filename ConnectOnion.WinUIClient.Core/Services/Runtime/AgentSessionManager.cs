@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Text.Json;
 using System.Threading.Tasks;
 using ConnectOnion.Protocol;
@@ -39,6 +40,7 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
     private readonly NotificationCoordinator? _notifications;
     private readonly HttpClient _http;
     private readonly ConversationRepository _conversations;
+    private readonly ProviderWorkRoomRepository? _workRooms;
     private readonly UsageRepository _usage;
     private readonly AgentConnectionRegistry _connections;
     private readonly ConversationRunRegistry _runs;
@@ -51,6 +53,10 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
     private readonly ConcurrentDictionary<string, byte> _historyPersistedRuns = new();
     private readonly ConcurrentQueue<string> _historyPersistedOrder = new();
     private const int MaxPersistedRunMarkers = 128;
+    private readonly ConcurrentDictionary<string, AgentConnectionService> _wiredDashboardConnections = new();
+    private readonly ConcurrentDictionary<string, DashboardSnapshot> _latestDashboardSnapshots = new();
+    private readonly object _connectionHandlerSync = new();
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> _dashboardConnectLocks = new();
 
     // Interactive-turn answers (ask_user / approval / plan_review) captured from the page as the
     // user resolves them, keyed by conversation id and consumed at persist time in the order the
@@ -68,6 +74,10 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
     // each turn would add another copy of every handler and the UI would show one "Reconnecting"
     // row per turn the conversation had ever run.
     private readonly ConcurrentDictionary<string, byte> _wiredConnections = new();
+    private readonly ConcurrentDictionary<string, AgentConnectionService> _wiredWorkRoomConnections = new();
+
+    /// <summary>Raised when an authenticated Host sends a new dashboard for an agent.</summary>
+    public event Action<string, DashboardSnapshot>? DashboardSnapshotReceived;
 
     // Run id for each conversation whose graceful-stop frame has been sent. This is app-level
     // state so switching pages cannot re-enable Stop and send a duplicate frame.
@@ -103,14 +113,17 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
         ConversationRepository conversations,
         UsageRepository? usage = null,
         ILogger<AgentSessionManager>? logger = null,
-        NotificationCoordinator? notifications = null)
+        NotificationCoordinator? notifications = null,
+        Func<int>? reconnectDelaySeconds = null,
+        ProviderWorkRoomRepository? workRooms = null)
     {
         _http = http;
         _conversations = conversations;
         _usage = usage ?? new UsageRepository();
         _logger = logger ?? NullLogger<AgentSessionManager>.Instance;
         _notifications = notifications;
-        _connections = new AgentConnectionRegistry(http);
+        _workRooms = workRooms;
+        _connections = new AgentConnectionRegistry(http, reconnectDelaySeconds: reconnectDelaySeconds);
         _runs = new ConversationRunRegistry(this, onError: ex =>
         {
             LogRunFailure(_logger, ex);
@@ -120,6 +133,37 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
     /// <summary>The app-owned sockets, exposed so the view model can answer interactive turns
     /// and trigger explicit reconnects on the same connection the run uses.</summary>
     public AgentConnectionRegistry Connections => _connections;
+
+    // connects workroom to the reused parents connection sonthe workroom can recieve live provider events
+    public async Task ConnectWorkRoomAsync(
+        AgentConfig agent, string parentConversationId, string? remoteSessionId = null)
+    {
+        ArgumentNullException.ThrowIfNull(agent);
+        _agentsById[agent.Id] = agent;
+
+        var connection = _connections.GetOrCreate(parentConversationId, agent);
+
+        AttachConnectionHandlers(parentConversationId, agent, connection);
+        await connection.ConnectAsync(remoteSessionId ?? parentConversationId).ConfigureAwait(false);
+    }
+
+    // connects or resumes the parent session, then sends the provider request
+    public async Task SendWorkRoomRequestAsync(
+        AgentConfig agent,
+        ProviderWorkRoom workRoom,
+        string? remoteSessionId,
+        string requestType,
+        IReadOnlyList<KeyValuePair<string, object?>> fields,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(agent);
+        ArgumentNullException.ThrowIfNull(workRoom);
+        _agentsById[agent.Id] = agent;
+        var connection = _connections.GetOrCreate(workRoom.ParentConversationId, agent);
+        AttachConnectionHandlers(workRoom.ParentConversationId, agent, connection);
+        await connection.ConnectAsync(remoteSessionId ?? workRoom.ParentConversationId, ct).ConfigureAwait(false);
+        await connection.SendProviderRequestAsync(requestType, fields, ct).ConfigureAwait(false);
+    }
 
     /// <summary>Records the result the user chose for an interactive turn (ask_user / approval /
     /// plan_review) so the app-level persist can stamp it onto the card it re-projects from the
@@ -466,6 +510,31 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
     private void AttachConnectionHandlers(
         string conversationId, AgentConfig agent, AgentConnectionService connection)
     {
+        var workRooms = _workRooms;
+        lock (_connectionHandlerSync)
+        {
+            if (workRooms is not null && (!_wiredWorkRoomConnections.TryGetValue(conversationId, out var workRoomConnection) || !ReferenceEquals(workRoomConnection, connection)))
+            {
+                _wiredWorkRoomConnections[conversationId] = connection;
+                connection.StreamEvent += streamEvent =>
+                {
+                    if (ProviderWorkRoom.IsWorkRoomEvent(streamEvent.Type))
+                        _ = PersistProviderWorkRoomEventAsync(workRooms, conversationId, streamEvent);
+                };
+            }
+
+            if (!_wiredDashboardConnections.TryGetValue(conversationId, out var dashboardConnection)
+                || !ReferenceEquals(dashboardConnection, connection))
+            {
+                _wiredDashboardConnections[conversationId] = connection;
+                connection.DashboardSnapshotReceived += snapshot =>
+                {
+                    _latestDashboardSnapshots[agent.Id] = snapshot;
+                    DashboardSnapshotReceived?.Invoke(agent.Id, snapshot);
+                };
+            }
+        }
+
         if (!_wiredConnections.TryAdd(conversationId, 0)) return;
 
         // Reconnect progress is published into the run's event buffer rather than raised as its
@@ -498,6 +567,20 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
             })));
 
         connection.SessionDiverged += state => _ = OnSessionDivergedAsync(conversationId, agent, state);
+    }
+
+    // saves and logs each provider event
+    private async Task PersistProviderWorkRoomEventAsync(
+        ProviderWorkRoomRepository workRooms, string conversationId, AgentStreamEvent streamEvent)
+    {
+        try
+        {
+            await workRooms.ApplyEventAsync(conversationId, streamEvent).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            LogRunFailure(_logger, ex);
+        }
     }
 
     /// <summary>
@@ -595,6 +678,43 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
 
     public ConversationRunSnapshot? GetActiveRun(string conversationId) => _runs.GetActiveRun(conversationId);
 
+    /// <summary>Connects the selected agent to receive its Host-rendered dashboard. Reuses a
+    /// conversation socket when one exists; otherwise keeps one dashboard-only socket per agent.</summary>
+    public async Task ConnectDashboardAsync(
+        AgentConfig agent, string? sessionId = null, bool refresh = false)
+    {
+        ArgumentNullException.ThrowIfNull(agent);
+        _agentsById[agent.Id] = agent;
+        var connectionKey = string.IsNullOrWhiteSpace(sessionId)
+            ? DashboardConnectionKey(agent.Id)
+            : sessionId;
+        var gate = _dashboardConnectLocks.GetOrAdd(agent.Id, _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            var connection = _connections.GetOrCreate(connectionKey, agent);
+            AttachConnectionHandlers(connectionKey, agent, connection);
+            var effectiveSessionId = sessionId ?? connection.SessionId;
+            if (refresh && connection.IsConnected && !_runs.IsRunActive(connectionKey)
+                && effectiveSessionId is not null)
+            {
+                await connection.ReconnectAsync(effectiveSessionId).ConfigureAwait(false);
+                return;
+            }
+
+            await connection.ConnectAsync(effectiveSessionId).ConfigureAwait(false);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    public DashboardSnapshot? GetLatestDashboardSnapshot(string agentId)
+        => _latestDashboardSnapshots.TryGetValue(agentId, out var snapshot) ? snapshot : null;
+
+    private static string DashboardConnectionKey(string agentId) => $"dashboard:{agentId}";
+
     public bool IsRunHistoryPersisted(string runId) => _historyPersistedRuns.ContainsKey(runId);
 
     public IReadOnlyList<ConversationRunSnapshot> GetActiveRuns() => _runs.GetActiveRuns();
@@ -660,13 +780,10 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
         if (connection is null) return Task.CompletedTask;
 
         // Remembered for the next CONNECT this socket makes (only a brand-new session keeps it —
-        // the host's merge discards ours otherwise), and pushed now if a turn is live to receive
-        // it. With no turn running the host would drop a mode_change on the floor, so we don't
-        // send one: SendMessageAsync carries the mode with the INPUT instead.
+        // the host's merge discards ours otherwise). No mode_change is pushed to a live turn;
+        // see AgentConnectionService.SendInputAsync.
         connection.InitialMode = mode;
-
-        var run = _runs.GetActiveRun(conversationId);
-        return run is { IsTerminal: false } ? connection.SetModeAsync(mode) : Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     private void NotifyApproval(AgentConfig agent, string conversationId, ApprovalRequest r)
@@ -692,12 +809,23 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
         // entry we are dropping. The registry's own maps are keyed by conversation too, and a
         // deleted conversation must not leave its last reply sitting in one of them.
         _runs.Forget(conversationId);
+        _wiredConnections.TryRemove(conversationId, out _);
+        _wiredWorkRoomConnections.TryRemove(conversationId, out _);
+        _wiredDashboardConnections.TryRemove(conversationId, out _);
         await _connections.RemoveAsync(conversationId).ConfigureAwait(false);
     }
 
     /// <summary>Forgets the small agent-config lookup after all of that agent's conversations
     /// have been released. The dictionary is app-scoped and otherwise retains deleted agents.</summary>
-    public void ForgetAgent(string agentId) => _agentsById.TryRemove(agentId, out _);
+    public void ForgetAgent(string agentId)
+    {
+        _agentsById.TryRemove(agentId, out _);
+        _latestDashboardSnapshots.TryRemove(agentId, out _);
+        var key = DashboardConnectionKey(agentId);
+        _wiredConnections.TryRemove(key, out _);
+        _wiredDashboardConnections.TryRemove(key, out _);
+        _ = _connections.RemoveAsync(key);
+    }
 
     /// <summary>Records that a run's history is on disk, bounded FIFO so the marker set never
     /// grows past <see cref="MaxPersistedRunMarkers"/> — each entry only matters for the brief

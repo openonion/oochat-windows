@@ -53,6 +53,7 @@
             <SolidColorBrush x:Key="SurfaceHoverBrush" Color="{ThemeResource SurfaceHoverColor}" />
             <SolidColorBrush x:Key="SurfacePressedBrush" Color="{ThemeResource SurfacePressedColor}" />
             <SolidColorBrush x:Key="SurfaceSelectedBrush" Color="{ThemeResource SurfaceSelectedColor}" />
+            <SolidColorBrush x:Key="GreenBackgroundBrush" Color="#F5F7F3" />
 
             <!-- Text -->
             <SolidColorBrush x:Key="TextPrimaryBrush" Color="{ThemeResource TextPrimaryColor}" />
@@ -185,6 +186,14 @@
             <SolidColorBrush x:Key="SurfaceStrokeColorDefaultBrush" Color="{ThemeResource BorderDefaultColor}" />
             <SolidColorBrush x:Key="SolidBackgroundFillColorBaseBrush" Color="{ThemeResource SurfaceElevatedColor}" />
 
+
+            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="{ThemeResource BrandPrimaryColor}" />
+            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="{ThemeResource BrandAccentHoverColor}" />
+            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="{ThemeResource BrandAccentPressedColor}" />
+            <SolidColorBrush x:Key="AccentButtonBackground" Color="{ThemeResource BrandPrimaryColor}" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="{ThemeResource BrandAccentHoverColor}" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="{ThemeResource BrandAccentPressedColor}" />
+
             <!-- Default Button PointerOver/Pressed: unifies every plain-Style toolbar and
                  command button (Toggle Sidebar, Back/Forward, Find, Zoom, Approve/Reject, ...)
                  on SurfaceHover/SurfacePressed without a per-button override. ToggleSwitch,
@@ -218,6 +227,7 @@
             <SolidColorBrush x:Key="SurfaceHoverBrush" Color="{ThemeResource SurfaceHoverColor}" />
             <SolidColorBrush x:Key="SurfacePressedBrush" Color="{ThemeResource SurfacePressedColor}" />
             <SolidColorBrush x:Key="SurfaceSelectedBrush" Color="{ThemeResource SurfaceSelectedColor}" />
+            <SolidColorBrush x:Key="GreenBackgroundBrush" Color="#111912" />
 
             <!-- Text -->
             <SolidColorBrush x:Key="TextPrimaryBrush" Color="{ThemeResource TextPrimaryColor}" />
@@ -342,6 +352,14 @@
             <SolidColorBrush x:Key="DividerStrokeColorDefaultBrush" Color="{ThemeResource DividerColor}" />
             <SolidColorBrush x:Key="SurfaceStrokeColorDefaultBrush" Color="{ThemeResource BorderDefaultColor}" />
             <SolidColorBrush x:Key="SolidBackgroundFillColorBaseBrush" Color="{ThemeResource SurfaceElevatedColor}" />
+
+
+            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="{ThemeResource BrandPrimaryColor}" />
+            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="{ThemeResource BrandAccentHoverColor}" />
+            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="{ThemeResource BrandAccentPressedColor}" />
+            <SolidColorBrush x:Key="AccentButtonBackground" Color="{ThemeResource BrandPrimaryColor}" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="{ThemeResource BrandAccentHoverColor}" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="{ThemeResource BrandAccentPressedColor}" />
 
             <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{ThemeResource SurfaceHoverColor}" />
             <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="{ThemeResource SurfacePressedColor}" />
@@ -470,4 +488,7 @@
 
     </ResourceDictionary.ThemeDictionaries>
 
+    <!-- The dashboard pane used to have its own top-level Cc* brushes here. Top-level brushes
+         sit outside ThemeDictionaries, so they resolved once and never followed a light/dark
+         flip or High Contrast. The pane now uses the semantic brushes above directly. -->
 </ResourceDictionary>
