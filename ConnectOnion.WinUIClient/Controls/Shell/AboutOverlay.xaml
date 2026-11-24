@@ -43,7 +43,7 @@
                            VerticalAlignment="Center"
                            AutomationProperties.AccessibilityView="Raw" />
                     <TextBlock x:Uid="AboutTitle" Grid.Column="1" Text="About ConnectOnion"
-                               Style="{StaticResource BodyStrongTextBlockStyle}"
+                               Style="{StaticResource ProductBodyStrongTextStyle}"
                                TextTrimming="CharacterEllipsis"
                                Foreground="{ThemeResource TextPrimaryBrush}" VerticalAlignment="Center" />
                     <Button x:Uid="AboutClose" Grid.Column="2" TabIndex="1" Style="{StaticResource AboutCloseButtonStyle}" Click="CloseButton_Click"
@@ -91,7 +91,7 @@
                     <Border Height="1" Background="{ThemeResource DividerBrush}" />
                     <Button x:Uid="AboutOk" x:Name="OkButton" Grid.Row="1" TabIndex="0"
                             AutomationProperties.AutomationId="AboutOkButton"
-                            Style="{StaticResource AccentButtonStyle}"
+                            Style="{StaticResource PaletteAccentButtonStyle}"
                             Content="OK" MinWidth="88" Margin="16,14,16,16"
                             HorizontalAlignment="Right" Click="OkButton_Click"
                             AutomationProperties.Name="Close About ConnectOnion" />

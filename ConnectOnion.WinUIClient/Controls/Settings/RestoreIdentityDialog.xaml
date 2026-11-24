@@ -23,7 +23,7 @@
                 </Grid.ColumnDefinitions>
                 <ic:FluentIcon Grid.Column="0" Icon="Warning" IconVariant="Regular" IconSize="Size16"
                                Foreground="{ThemeResource DangerBrush}" VerticalAlignment="Top" />
-                <TextBlock x:Uid="RestoreIdentityWarning" Grid.Column="1" TextWrapping="Wrap" MinWidth="0" Style="{StaticResource CaptionTextBlockStyle}"
+                <TextBlock x:Uid="RestoreIdentityWarning" Grid.Column="1" TextWrapping="Wrap" MinWidth="0" Style="{StaticResource ProductCaptionTextStyle}"
                            Text="This replaces the identity on this device. The current one is erased and cannot be recovered without its own backup, and agents that authorized the current address will have to authorize the restored one." />
             </Grid>
         </Border>
@@ -39,14 +39,15 @@
         </Button>
 
         <StackPanel Spacing="6">
-        <TextBlock x:Uid="RestoreIdentityPhrase" Text="Recovery phrase" Style="{StaticResource BodyStrongTextBlockStyle}" />
+        <TextBlock x:Uid="RestoreIdentityPhrase" Text="Recovery phrase" Style="{StaticResource ProductBodyStrongTextStyle}" />
             <TextBox x:Uid="RestoreIdentityInput" x:Name="PhraseBox" AutomationProperties.AutomationId="PhraseBox" AcceptsReturn="True" TextWrapping="Wrap"
                      Height="96" MinWidth="0"
                      FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                     FontSize="{StaticResource ProductCodeFontSize}"
                      PlaceholderText="Enter your 12-word recovery phrase"
                      TextChanged="Phrase_TextChanged"
                      AutomationProperties.Name="Recovery phrase or private key" />
-            <TextBlock x:Uid="RestoreIdentityLegacyHint" TextWrapping="Wrap" MinWidth="0" Style="{StaticResource CaptionTextBlockStyle}"
+            <TextBlock x:Uid="RestoreIdentityLegacyHint" TextWrapping="Wrap" MinWidth="0" Style="{StaticResource ProductCaptionTextStyle}"
                        Foreground="{ThemeResource TextSecondaryBrush}"
                        Text="A private key in hex also works, for an identity created before recovery phrases." />
         </StackPanel>
@@ -60,25 +61,27 @@
                 CornerRadius="8" Padding="12,10">
             <StackPanel Spacing="8">
                 <StackPanel Spacing="2">
-                    <TextBlock x:Uid="RestoreIdentityCurrent" Text="Current address" Style="{StaticResource CaptionTextBlockStyle}"
+                    <TextBlock x:Uid="RestoreIdentityCurrent" Text="Current address" Style="{StaticResource ProductCaptionTextStyle}"
                                Foreground="{ThemeResource TextSecondaryBrush}" />
                     <TextBlock x:Name="CurrentAddressText" TextWrapping="Wrap" MinWidth="0"
-                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Style="{StaticResource ProductCaptionTextStyle}"
                                FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                               FontSize="{StaticResource ProductCodeFontSize}"
                                Foreground="{ThemeResource TextSecondaryBrush}" />
                 </StackPanel>
                 <StackPanel Spacing="2">
-                    <TextBlock x:Uid="RestoreIdentityTarget" Text="Restores to" Style="{StaticResource CaptionTextBlockStyle}"
+                    <TextBlock x:Uid="RestoreIdentityTarget" Text="Restores to" Style="{StaticResource ProductCaptionTextStyle}"
                                Foreground="{ThemeResource TextSecondaryBrush}" />
                     <TextBlock x:Name="RestoredAddressText" TextWrapping="Wrap" MinWidth="0"
-                               Style="{StaticResource CaptionTextBlockStyle}"
-                               FontFamily="{StaticResource JetBrainsMonoFontFamily}" />
+                               Style="{StaticResource ProductCaptionTextStyle}"
+                               FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                               FontSize="{StaticResource ProductCodeFontSize}" />
                 </StackPanel>
             </StackPanel>
         </Border>
 
         <TextBlock x:Name="StatusText" Visibility="Collapsed" TextWrapping="Wrap" MinWidth="0"
-                   Style="{StaticResource CaptionTextBlockStyle}"
+                   Style="{StaticResource ProductCaptionTextStyle}"
                    Foreground="{ThemeResource StatusErrorTextBrush}" />
     </StackPanel>
 </ContentDialog>

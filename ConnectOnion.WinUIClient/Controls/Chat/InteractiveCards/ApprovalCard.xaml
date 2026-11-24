@@ -209,7 +209,7 @@
                 <Grid Padding="12,10" KeyDown="ApprovalRoot_KeyDown">
                     <Button Margin="0,12,0,0" MinHeight="36" Padding="14,0"
                             HorizontalAlignment="Right" IsEnabled="False"
-                            Style="{StaticResource AccentButtonStyle}"
+                            Style="{StaticResource PaletteAccentButtonStyle}"
                             Visibility="{x:Bind Message.IsApprovalSubmitting, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <ProgressRing Width="16" Height="16" IsActive="True" />

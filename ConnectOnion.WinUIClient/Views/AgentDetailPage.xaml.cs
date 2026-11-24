@@ -68,7 +68,7 @@ public sealed partial class AgentDetailPage : Page, IReloadablePage, IShutdownDi
         Composer.FocusInput();
         // Account balance is useful secondary information, never a gate on the first interactive
         // frame. The resilient HTTP pipeline may retry, so refresh only after the composer works.
-        _ = RefreshBalanceAsync();
+        // _ = RefreshBalanceAsync();
     }
 
     // This composer starts a fresh conversation before navigating to ChatPage.
@@ -98,23 +98,23 @@ public sealed partial class AgentDetailPage : Page, IReloadablePage, IShutdownDi
         await dialog.ShowThemedAsync();
     }
 
-    private async System.Threading.Tasks.Task RefreshBalanceAsync()
-    {
-        try
-        {
-            var profile = await Services.AppServices.OpenOnionAccount.RefreshAsync();
-            if (!IsLoaded) return;
-            BalanceButton.Content = LocalizedStrings.Format(
-                "AgentBalanceTopUp",
-                "Balance {0:C2} · Top up",
-                profile.BalanceUsd);
-            BalanceButton.Visibility = Visibility.Visible;
-        }
-        catch
-        {
-            if (IsLoaded) BalanceButton.Visibility = Visibility.Collapsed;
-        }
-    }
+    //private async System.Threading.Tasks.Task RefreshBalanceAsync()
+    //{
+    //    try
+    //    {
+    //        var profile = await Services.AppServices.OpenOnionAccount.RefreshAsync();
+    //        if (!IsLoaded) return;
+    //        BalanceButton.Content = LocalizedStrings.Format(
+    //            "AgentBalanceTopUp",
+    //            "Balance {0:C2} · Top up",
+    //            profile.BalanceUsd);
+    //        BalanceButton.Visibility = Visibility.Visible;
+    //    }
+    //    catch
+    //    {
+    //        if (IsLoaded) BalanceButton.Visibility = Visibility.Collapsed;
+    //    }
+    //}
 
     private async void Balance_Click(object sender, RoutedEventArgs e)
     {
@@ -138,7 +138,7 @@ public sealed partial class AgentDetailPage : Page, IReloadablePage, IShutdownDi
                 // through — carry the mode across with it or the new conversation opens at the
                 // default whatever the picker said.
                 parameter: new ComposerSubmission(initialPrompt, submission.Attachments, submission.Mode),
-                transitionInfo: new DrillInNavigationTransitionInfo());
+                transitionInfo: new SuppressNavigationTransitionInfo());
         }
     }
 }

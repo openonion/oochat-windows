@@ -42,7 +42,7 @@
                 <DataTemplate x:DataType="vm:KeyboardShortcutRowGroup">
                     <StackPanel Margin="0,6,0,14" Spacing="6">
                         <TextBlock Text="{x:Bind Title, Converter={StaticResource KeyboardText}}"
-                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                   Style="{StaticResource ProductBodyStrongTextStyle}"
                                    Foreground="{ThemeResource TextSecondaryBrush}" />
                         <ItemsControl ItemsSource="{x:Bind Rows}">
                             <ItemsControl.ItemTemplate>

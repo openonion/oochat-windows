@@ -41,9 +41,8 @@ public sealed class ToolResultTextBlock : UserControl
 
     private readonly TextBlock _textBlock = new()
     {
-        FontFamily = new FontFamily(
-            "ms-appx:///Assets/Fonts/JetBrainsMonoNerdFontMono-Regular.ttf#JetBrainsMono NFM"),
-        FontSize = 13,
+        FontFamily = (FontFamily)Application.Current.Resources["JetBrainsMonoFontFamily"],
+        FontSize = (double)Application.Current.Resources["ProductCodeFontSize"],
         IsTextSelectionEnabled = true,
         // Always on: the log region is a fixed-width column, so anything that would overflow folds
         // rather than scrolling sideways.

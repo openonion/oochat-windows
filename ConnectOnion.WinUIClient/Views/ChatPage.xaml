@@ -20,13 +20,37 @@
 
 
             <Style x:Key="InteractiveCollapsedTitleStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource ProductFontFamily}" />
                 <Setter Property="FontSize" Value="{StaticResource ProductCaptionFontSize}" />
                 <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
                 <Setter Property="Foreground" Value="{ThemeResource TextSecondaryBrush}" />
             </Style>
 
+            <!-- Per-message hover actions (retry / edit / copy / info). Compact on purpose: the
+                 row is hidden until the message is hovered or focused, so it only needs to be
+                 big enough to hit, not to be noticed. The icon is the Size16 glyph scaled to
+                 ~14px inline on each icon (Size12 lacks many glyphs, and a Transform is not set
+                 through a shared Style setter). -->
+            <Style x:Key="ChatMessageActionButtonStyle" TargetType="Button" BasedOn="{StaticResource PaletteButtonStyle}">
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="IsTabStop" Value="True" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="ChatMessageActionIconStyle" TargetType="ic:FluentIcon">
+                <Setter Property="IconVariant" Value="Regular" />
+                <Setter Property="IconSize" Value="Size16" />
+                <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+                <Setter Property="Foreground" Value="{ThemeResource TextSecondaryBrush}" />
+            </Style>
+
             <Style x:Key="InteractiveOutcomeStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource ProductFontFamily}" />
                 <Setter Property="FontSize" Value="{StaticResource ProductMicroFontSize}" />
                 <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="VerticalAlignment" Value="Center" />
@@ -154,7 +178,7 @@
                      conversation turns (a user message always starts a new turn); intra-turn rows
                      keep the tighter item spacing. -->
                 <StackPanel MaxWidth="{StaticResource ChatColumnWidth}"
-                            Margin="0,16,0,4"
+                            Margin="0,12,0,0"
                             HorizontalAlignment="Stretch"
                             Spacing="{StaticResource Spacing8}"
                             Background="Transparent"
@@ -163,7 +187,7 @@
                             GotFocus="MessageActions_GotFocus"
                             LostFocus="MessageActions_LostFocus">
                     <StackPanel HorizontalAlignment="Right"
-                                Spacing="8"
+                                Spacing="4"
                                 Visibility="{x:Bind IsEditing, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=invert}">
                         <!-- x:Load rather than Visibility, and the same reasoning applies to every
                              other x:Load in this file: a collapsed element is still *built*. XAML
@@ -195,71 +219,68 @@
                                                            FontSize="{x:Bind MessageFontSize, Mode=OneWay}"
                                                            Foreground="{ThemeResource TextPrimaryBrush}" />
                         </Border>
-                        <!-- Reserve the action row so interaction never shifts later messages.
-                             Commands stay softly visible for touch/discovery, then strengthen
-                             when this bubble is hovered or keyboard-focused. -->
-                        <Grid MinHeight="40"
+                        <!-- Maintain interactive row so revealing it doesn't shift later messages.
+                             Hidden at rest (UserActionsOpacity == 0) and shown at full strength
+                             while bubble is hovered or holds keyboard focus. -->
+                        <Grid MinHeight="28"
                               HorizontalAlignment="Right"
                               ColumnSpacing="4">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock VerticalAlignment="Center"
-                                       Text="{x:Bind TimeLabel, Mode=OneWay}"
-                                       FontSize="{StaticResource ProductCaptionFontSize}"
-                                       Foreground="{ThemeResource TextTertiaryBrush}" />
-                            <!-- Only the icon panel is softened at rest. The timestamp stays fully
-                                 opaque because it is small text and therefore needs the 4.5:1 text
-                                 contrast floor rather than the 3:1 UI-component floor. -->
                              <StackPanel Grid.Column="1"
                                          Orientation="Horizontal"
                                          HorizontalAlignment="Right"
                                          Spacing="0"
                                          Opacity="{x:Bind UserActionsOpacity, Mode=OneWay}">
+                                <!-- Send time, revealed with the actions. -->
+                                <TextBlock Text="{x:Bind ActionTimeLabel, Mode=OneWay}"
+                                           ToolTipService.ToolTip="{x:Bind ActionTimeToolTip, Mode=OneWay}"
+                                           Margin="0,0,6,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="{StaticResource ProductCaptionFontSize}"
+                                           Foreground="{ThemeResource TextSecondaryBrush}" />
                                 <Button x:Uid="ChatRetryFromMessage" Tag="{x:Bind}"
-                                        Padding="2"
-                                        MinWidth="40"
-                                        MinHeight="40"
-                                        Background="Transparent"
-                                        BorderThickness="0"
-                                        IsTabStop="True"
+                                        Style="{StaticResource ChatMessageActionButtonStyle}"
+                                        MinWidth="28"
+                                        MinHeight="28"
                                         Click="RetryUserMessage_Click"
                                         AutomationProperties.Name="Retry in this conversation"
                                         ToolTipService.ToolTip="Retry in this conversation"
                                         Visibility="{x:Bind CanEdit, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-                                    <!-- All three action icons take the Size16-scaled-to-12 treatment, even
-                                         the two that do have a Size12 glyph: mixing the two fonts in one row
-                                         reads as inconsistent, because the Size12 designs carry heavier
-                                         strokes and measure 12px against the scaled icon's 16px slot. -->
-                                    <ic:FluentIcon Icon="ArrowClockwise" IconVariant="Regular" IconSize="Size16"
-                                                   Foreground="{ThemeResource TextSecondaryBrush}" />
+                                    <ic:FluentIcon Icon="ArrowClockwise" Style="{StaticResource ChatMessageActionIconStyle}">
+                                        <ic:FluentIcon.RenderTransform>
+                                            <ScaleTransform ScaleX="0.875" ScaleY="0.875" />
+                                        </ic:FluentIcon.RenderTransform>
+                                    </ic:FluentIcon>
                                 </Button>
                                 <Button x:Uid="ChatEditMessage" Tag="{x:Bind}"
-                                        Padding="2"
-                                        MinWidth="40"
-                                        MinHeight="40"
-                                        Background="Transparent"
-                                        BorderThickness="0"
-                                        IsTabStop="True"
+                                        Style="{StaticResource ChatMessageActionButtonStyle}"
+                                        MinWidth="28"
+                                        MinHeight="28"
                                         Click="EditUserMessage_Click"
                                         AutomationProperties.Name="Edit in a new conversation"
                                         ToolTipService.ToolTip="Edit in a new conversation"
                                         Visibility="{x:Bind CanEdit, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-                                    <ic:FluentIcon Icon="Edit" IconVariant="Regular" IconSize="Size16"
-                                                   Foreground="{ThemeResource TextSecondaryBrush}" />
+                                    <ic:FluentIcon Icon="Edit" Style="{StaticResource ChatMessageActionIconStyle}">
+                                        <ic:FluentIcon.RenderTransform>
+                                            <ScaleTransform ScaleX="0.875" ScaleY="0.875" />
+                                        </ic:FluentIcon.RenderTransform>
+                                    </ic:FluentIcon>
                                 </Button>
-                                <Button x:Uid="ChatCopyMessage" Padding="2"
-                                        MinWidth="40"
-                                        MinHeight="40"
-                                        Background="Transparent"
-                                        BorderThickness="0"
-                                        IsTabStop="True"
+                                <Button x:Uid="ChatCopyMessage"
+                                        Style="{StaticResource ChatMessageActionButtonStyle}"
+                                        MinWidth="28"
+                                        MinHeight="28"
                                         Click="CopyMessage_Click"
                                         AutomationProperties.Name="Copy message"
                                         ToolTipService.ToolTip="Copy message">
-                                    <ic:FluentIcon Icon="Copy" IconVariant="Regular" IconSize="Size16"
-                                                   Foreground="{ThemeResource TextSecondaryBrush}" />
+                                    <ic:FluentIcon Icon="Copy" Style="{StaticResource ChatMessageActionIconStyle}">
+                                        <ic:FluentIcon.RenderTransform>
+                                            <ScaleTransform ScaleX="0.875" ScaleY="0.875" />
+                                        </ic:FluentIcon.RenderTransform>
+                                    </ic:FluentIcon>
                                 </Button>
                             </StackPanel>
                         </Grid>
@@ -322,7 +343,7 @@
                                             Click="CancelEditUserMessage_Click" />
                                     <Button x:Uid="ChatEditSave" Tag="{x:Bind}"
                                             Content="Send"
-                                            Style="{StaticResource AccentButtonStyle}"
+                                            Style="{StaticResource PaletteAccentButtonStyle}"
                                             IsEnabled="{x:Bind CanSaveEdit, Mode=OneWay}"
                                             Click="SaveEditUserMessage_Click" />
                                 </StackPanel>
@@ -450,7 +471,7 @@
                         <Border Grid.Column="0" Height="1" VerticalAlignment="Center"
                                 Background="{ThemeResource BorderSubtleBrush}" />
                             <TextBlock x:Uid="ChatOr" Grid.Column="1" Text="or"
-                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Style="{StaticResource ProductCaptionTextStyle}"
                                    Foreground="{ThemeResource TextTertiaryBrush}" />
                         <Border Grid.Column="2" Height="1" VerticalAlignment="Center"
                                 Background="{ThemeResource BorderSubtleBrush}" />
@@ -464,7 +485,7 @@
                                 Spacing="8">
                         <TextBlock Text="{x:Bind OnboardPaymentPrompt, Mode=OneWay}"
                                    TextWrapping="Wrap" MinWidth="0"
-                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Style="{StaticResource ProductCaptionTextStyle}"
                                    Foreground="{ThemeResource TextSecondaryBrush}" />
                         <!-- Only ever rendered when the host actually named a destination. The
                              agent's own address is not a safe stand-in — paying the wrong place
@@ -479,55 +500,83 @@
                                        TextWrapping="Wrap" MinWidth="0"
                                        IsTextSelectionEnabled="True"
                                        FontFamily="{StaticResource JetBrainsMonoFontFamily}"
-                                       Style="{StaticResource CaptionTextBlockStyle}" />
+                                       Style="{StaticResource ProductCaptionTextStyle}"
+                                       FontSize="{StaticResource ProductCodeFontSize}" />
                         </Border>
                         <Button Content="{x:Bind OnboardPaymentLabel, Mode=OneWay}"
                                 HorizontalAlignment="Left"
                                 Click="SubmitOnboardPayment_Click"
                                 IsEnabled="{x:Bind IsOnboardingInputEnabled, Mode=OneWay}" />
                     </StackPanel>
-                    <Grid MinHeight="40"
+                    <Grid MinHeight="28"
+                          Margin="-6,-4,0,0"
                           HorizontalAlignment="Left"
                           ColumnSpacing="4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock VerticalAlignment="Center"
-                                   Text="{x:Bind TimeLabel, Mode=OneWay}"
-                                   FontSize="{StaticResource ProductCaptionFontSize}"
-                                   Foreground="{ThemeResource TextTertiaryBrush}" />
-                        <!-- See the user-message row above: no second opacity multiplier. -->
                         <StackPanel Grid.Column="1"
                                     Orientation="Horizontal"
                                     Spacing="0"
                                     Opacity="{x:Bind UserActionsOpacity, Mode=OneWay}">
-                            <Button x:Uid="ChatRetryResponse" Tag="{x:Bind}"
-                                    Padding="2"
-                                    MinWidth="40"
-                                    MinHeight="40"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    IsTabStop="True"
-                                    Click="RetryAgentMessage_Click"
-                                    AutomationProperties.Name="Retry response in this conversation"
-                                    ToolTipService.ToolTip="Retry response in this conversation">
-                                <!-- Matches the user-message action row above: same font, same scale. -->
-                                <ic:FluentIcon Icon="ArrowClockwise" IconVariant="Regular" IconSize="Size16"
-                                               Foreground="{ThemeResource TextSecondaryBrush}" />
-                            </Button>
-                            <Button x:Uid="ChatCopyResponse" Padding="2"
-                                    MinWidth="40"
-                                    MinHeight="40"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    IsTabStop="True"
+                            <Button x:Uid="ChatCopyResponse"
+                                    Style="{StaticResource ChatMessageActionButtonStyle}"
+                                    MinWidth="28"
+                                    MinHeight="28"
                                     Click="CopyMessage_Click"
                                     AutomationProperties.Name="Copy response"
                                     ToolTipService.ToolTip="Copy response">
-                                <ic:FluentIcon Icon="Copy" IconVariant="Regular" IconSize="Size16"
-                                               Foreground="{ThemeResource TextSecondaryBrush}" />
+                                <ic:FluentIcon Icon="Copy" Style="{StaticResource ChatMessageActionIconStyle}">
+                                    <ic:FluentIcon.RenderTransform>
+                                        <ScaleTransform ScaleX="0.875" ScaleY="0.875" />
+                                    </ic:FluentIcon.RenderTransform>
+                                </ic:FluentIcon>
                             </Button>
+                            <Button x:Uid="ChatRetryResponse" Tag="{x:Bind}"
+                                    Style="{StaticResource ChatMessageActionButtonStyle}"
+                                    MinWidth="28"
+                                    MinHeight="28"
+                                    Click="RetryAgentMessage_Click"
+                                    AutomationProperties.Name="Retry response in this conversation"
+                                    ToolTipService.ToolTip="Retry response in this conversation">
+                                <ic:FluentIcon Icon="ArrowClockwise" Style="{StaticResource ChatMessageActionIconStyle}">
+                                    <ic:FluentIcon.RenderTransform>
+                                        <ScaleTransform ScaleX="0.875" ScaleY="0.875" />
+                                    </ic:FluentIcon.RenderTransform>
+                                </ic:FluentIcon>
+                            </Button>
+                            <!-- The turn's model / duration / tokens, which used to be a two-line
+                                 row of its own above every reply. Tooltip on hover; the flyout
+                                 makes the same text reachable by touch and keyboard. -->
+                            <Button x:Name="TurnUsageInfoButton"
+                                    x:Load="{x:Bind HasTurnUsageInfo, Mode=OneWay}"
+                                    Style="{StaticResource ChatMessageActionButtonStyle}"
+                                    MinWidth="28"
+                                    MinHeight="28"
+                                    AutomationProperties.Name="{x:Bind TurnUsageInfo, Mode=OneWay}"
+                                    ToolTipService.ToolTip="{x:Bind TurnUsageInfo, Mode=OneWay}">
+                                <Button.Flyout>
+                                    <Flyout Placement="Bottom">
+                                        <TextBlock Text="{x:Bind TurnUsageInfo, Mode=OneWay}"
+                                                   FontSize="{StaticResource ProductCaptionFontSize}"
+                                                   Foreground="{ThemeResource TextSecondaryBrush}"
+                                                   IsTextSelectionEnabled="True" />
+                                    </Flyout>
+                                </Button.Flyout>
+                                <ic:FluentIcon Icon="Info" Style="{StaticResource ChatMessageActionIconStyle}">
+                                    <ic:FluentIcon.RenderTransform>
+                                        <ScaleTransform ScaleX="0.875" ScaleY="0.875" />
+                                    </ic:FluentIcon.RenderTransform>
+                                </ic:FluentIcon>
+                            </Button>
+                            <!-- Reply time, revealed with the actions. -->
+                            <TextBlock Text="{x:Bind ActionTimeLabel, Mode=OneWay}"
+                                       ToolTipService.ToolTip="{x:Bind ActionTimeToolTip, Mode=OneWay}"
+                                       Margin="6,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="{StaticResource ProductCaptionFontSize}"
+                                       Foreground="{ThemeResource TextSecondaryBrush}" />
                         </StackPanel>
                     </Grid>
                 </StackPanel>
@@ -738,56 +787,6 @@
                 </Grid>
             </DataTemplate>
 
-            <!-- A turn's model/token cost is supporting metadata, not another process card. It sits
-                 immediately *before* the final assistant output, so the process records end
-                 together and the turn ends on the answer rather than on a token count.
-                 ChatTurnProjection.AppendCompletedTurn owns that ordering. -->
-            <!-- Turn metadata, two lines: "model · duration" over "tokens · context · tools". The
-                 second line is quieter and hides when there's nothing beyond the first segment, so
-                 short turns stay one line. AutomationProperties.Name keeps the full single-line
-                 summary for screen readers. -->
-            <DataTemplate x:Key="ChatTurnUsageTemplate" x:DataType="models:ChatMessage">
-                <Grid MaxWidth="{StaticResource ChatColumnWidth}"
-                      Margin="0,2,0,0"
-                      ColumnSpacing="6"
-                      HorizontalAlignment="Left"
-                      AutomationProperties.Name="{x:Bind TurnUsageSummary, Mode=OneWay}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <!-- Size16 scaled to 0.75 rather than Size12: the 12px font ships ~439 of the
-                         4372 glyphs and silently renders a missing one as .notdef (see the
-                         FluentIcons notes in CLAUDE.md). The transform does not shrink the layout
-                         slot, so the icon still measures 16px. Top-aligned to sit against line 1. -->
-                    <ic:FluentIcon Grid.Column="0"
-                                   Icon="Gauge"
-                                   IconVariant="Regular"
-                                   IconSize="Size16"
-                                   VerticalAlignment="Top"
-                                   Margin="0,1,0,0"
-                                   RenderTransformOrigin="0.5,0.5"
-                                   Foreground="{ThemeResource TextTertiaryBrush}">
-                        <ic:FluentIcon.RenderTransform>
-                            <ScaleTransform ScaleX="0.75" ScaleY="0.75" />
-                        </ic:FluentIcon.RenderTransform>
-                    </ic:FluentIcon>
-                    <StackPanel Grid.Column="1" Spacing="1">
-                        <TextBlock Text="{x:Bind TurnUsagePrimary, Mode=OneWay}"
-                                   FontSize="{StaticResource ProductCaptionFontSize}"
-                                   Foreground="{ThemeResource TextTertiaryBrush}"
-                                   TextTrimming="CharacterEllipsis"
-                                   IsTextSelectionEnabled="True" />
-                        <TextBlock Text="{x:Bind TurnUsageSecondary, Mode=OneWay}"
-                                   FontSize="{StaticResource ProductCaptionFontSize}"
-                                   Foreground="{ThemeResource TextTertiaryBrush}"
-                                   TextTrimming="CharacterEllipsis"
-                                   IsTextSelectionEnabled="True"
-                                   Visibility="{x:Bind HasTurnUsageSecondary, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
-                    </StackPanel>
-                </Grid>
-            </DataTemplate>
-
             <DataTemplate x:Key="ChatToolActivityTemplate" x:DataType="models:ChatMessage">
                 <controls:ToolActivityView Activity="{x:Bind ToolActivity, Mode=OneWay}"
                                            FontSize="{x:Bind MessageFontSize, Mode=OneWay}"
@@ -842,7 +841,7 @@
             <presentation:ChatMessageTemplateSelector x:Key="ChatMessageTemplates"
                                                 User="{StaticResource ChatUserTemplate}"
                                                 Agent="{StaticResource ChatAgentTemplate}"
-                                                Usage="{StaticResource ChatTurnUsageTemplate}"
+                                                Usage="{StaticResource ChatEmptyTemplate}"
                                                 Activity="{StaticResource ChatActivityTemplate}"
                                                 ToolActivity="{StaticResource ChatToolActivityTemplate}"
                                                 AskUser="{StaticResource ChatAskUserTemplate}"
@@ -861,7 +860,7 @@
         <!-- Compact, persistent workspace identity. It shares the transcript measure and keeps
              agent context visible through long tool runs without becoming a heavy title bar. -->
         <Border Grid.Row="0"
-                MinHeight="58"
+                MinHeight="48"
                 Padding="24,0"
                 Background="{ThemeResource ChatBackgroundBrush}"
                 BorderBrush="{ThemeResource BorderSubtleBrush}"
@@ -873,7 +872,6 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <controls:AgentAvatar Size="32"
                                       CornerRadius="16"
@@ -889,9 +887,15 @@
                                FontWeight="SemiBold"
                                Foreground="{ThemeResource TextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" />
+                    <!-- Just the dot and label. The longer presence detail (e.g. why the agent
+                         is unreachable) is a tooltip here; the offline notice above the composer
+                         still shows it in full when it matters. -->
                     <StackPanel Orientation="Horizontal"
                                 Spacing="6"
-                                VerticalAlignment="Center">
+                                HorizontalAlignment="Left"
+                                Background="Transparent"
+                                VerticalAlignment="Center"
+                                ToolTipService.ToolTip="{x:Bind Vm.PresenceDetailToolTip, Mode=OneWay}">
                         <Ellipse Width="6"
                                  Height="6"
                                  VerticalAlignment="Center"
@@ -900,29 +904,8 @@
                                    FontSize="{StaticResource ProductCaptionFontSize}"
                                    VerticalAlignment="Center"
                                    Foreground="{ThemeResource TextSecondaryBrush}" />
-                        <TextBlock Text="·"
-                                   FontSize="{StaticResource ProductCaptionFontSize}"
-                                   VerticalAlignment="Center"
-                                   Foreground="{ThemeResource TextTertiaryBrush}"
-                                   Visibility="{x:Bind Vm.PresenceDetail, Mode=OneWay, Converter={StaticResource StringToVis}}" />
-                        <TextBlock Text="{x:Bind Vm.PresenceDetail, Mode=OneWay}"
-                                   FontSize="{StaticResource ProductCaptionFontSize}"
-                                   VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis"
-                                   Foreground="{ThemeResource TextTertiaryBrush}"
-                                   Visibility="{x:Bind Vm.PresenceDetail, Mode=OneWay, Converter={StaticResource StringToVis}}" />
                     </StackPanel>
                 </StackPanel>
-                <TextBlock Grid.Column="2"
-                           Margin="8,0,0,0"
-                           MaxWidth="180"
-                           VerticalAlignment="Center"
-                           Text="{x:Bind Vm.SessionUpdatedTimeText, Mode=OneWay}"
-                           FontSize="{StaticResource ProductCaptionFontSize}"
-                           Foreground="{ThemeResource TextTertiaryBrush}"
-                           TextTrimming="CharacterEllipsis"
-                           TextWrapping="NoWrap"
-                           Visibility="{x:Bind Vm.SessionUpdatedTimeText, Mode=OneWay, Converter={StaticResource StringToVis}}" />
             </Grid>
         </Border>
 
@@ -951,6 +934,9 @@
                  A second copy used to live here, scrolling with the transcript, and had been
                  hardcoded Visibility="Collapsed" — so every chat page built an agent avatar,
                  name and presence block that could never render. -->
+            <ListView.ItemContainerTransitions>
+                <TransitionCollection />
+            </ListView.ItemContainerTransitions>
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -1126,7 +1112,7 @@
                     Spacing="8"
                     Visibility="Collapsed">
             <TextBlock x:Uid="ChatEmptyTitle" Text="No messages yet"
-                       Style="{StaticResource SubtitleTextBlockStyle}"
+                       Style="{StaticResource ProductSubtitleTextStyle}"
                        HorizontalAlignment="Center" />
             <TextBlock x:Uid="ChatEmptyDescription" Text="Type a message below to start the conversation."
                        Foreground="{ThemeResource TextSecondaryBrush}"

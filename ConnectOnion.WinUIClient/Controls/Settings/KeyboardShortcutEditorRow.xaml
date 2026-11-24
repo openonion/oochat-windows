@@ -8,7 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+    <Border Background="{ThemeResource GreenBackgroundBrush}"
             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
             BorderThickness="1"
             CornerRadius="4"
@@ -45,7 +45,7 @@
                     Grid.Column="1"
                     VerticalAlignment="Center"
                     Visibility="Collapsed"
-                    Background="{ThemeResource SurfaceElevatedBrush}"
+                    Background="{ThemeResource GreenBackgroundBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="4"

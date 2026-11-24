@@ -64,6 +64,7 @@
         </Style>
 
         <Style x:Key="HomeMetadataLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource ProductFontFamily}" />
             <Setter Property="FontSize" Value="{StaticResource ProductMicroFontSize}" />
             <Setter Property="Foreground" Value="{ThemeResource TextTertiaryBrush}" />
         </Style>
@@ -110,11 +111,6 @@
             <Grid x:Name="ContentRoot"
                   Margin="{StaticResource PageMarginDefault}"
                   HorizontalAlignment="Stretch">
-                <Grid.ChildrenTransitions>
-                    <TransitionCollection>
-                        <EntranceThemeTransition IsStaggeringEnabled="False" />
-                    </TransitionCollection>
-                </Grid.ChildrenTransitions>
 
                 <StackPanel>
                     <!-- The home page is an Agent launcher, so the title is compact and top-aligned.
@@ -147,8 +143,8 @@
                                 MinHeight="40"
                                 Padding="12,0"
                                 VerticalAlignment="Center"
-                                Style="{StaticResource DefaultButtonStyle}"
-                                Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                Style="{StaticResource PaletteButtonStyle}"
+                                Background="{ThemeResource GreenBackgroundBrush}"
                                 BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
                                 AutomationProperties.AutomationId="HomeAddAgentButton"
                                 AutomationProperties.Name="Add another agent"
@@ -182,13 +178,28 @@
                                    FontSize="{StaticResource ProductBodyFontSize}"
                                    FontWeight="SemiBold"
                                    Foreground="{ThemeResource TextPrimaryBrush}" />
-                        <TextBlock x:Uid="HomeStatusAuto"
-                                   x:Name="AutomaticStatusText"
-                                   Grid.Column="1"
-                                   Text="Status updates automatically"
-                                   FontSize="{StaticResource ProductCaptionFontSize}"
-                                   Foreground="{ThemeResource TextTertiaryBrush}"
-                                   VerticalAlignment="Center" />
+                        <StackPanel x:Name="AutomaticStatusText"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    Spacing="7"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.Name="{x:Bind OnlineAgentCountText, Mode=OneWay}">
+                            <Ellipse Width="6"
+                                     Height="6"
+                                     Fill="{ThemeResource SuccessBrush}"
+                                     Visibility="{x:Bind HasOnlineAgents, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                            <Ellipse Width="6"
+                                     Height="6"
+                                     Stroke="{ThemeResource TextTertiaryBrush}"
+                                     StrokeThickness="1"
+                                     Visibility="{x:Bind HasOnlineAgents, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+                            <TextBlock Text="{x:Bind OnlineAgentStatusText, Mode=OneWay}"
+                                       FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                                       FontSize="{StaticResource ProductCaptionFontSize}"
+                                       CharacterSpacing="70"
+                                       Foreground="{ThemeResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
                     </Grid>
 
                     <!-- One restrained grouped surface; Agent rows are not independent cards. -->
@@ -249,7 +260,7 @@
                                             <Border Grid.ColumnSpan="5"
                                                     Margin="-12,-8"
                                                     CornerRadius="7"
-                                                    Background="{ThemeResource SidebarItemSelectedBrush}"
+                                                    Background="{ThemeResource GreenBackgroundBrush}"
                                                     IsHitTestVisible="False"
                                                     Visibility="{x:Bind ShowSelection, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
                                             <Border Grid.ColumnSpan="5"
@@ -407,7 +418,7 @@
 
                     <Border MinHeight="150"
                             Padding="24"
-                            Background="{ThemeResource LayerFillColorDefaultBrush}"
+                            Background="{ThemeResource GreenBackgroundBrush}"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                             BorderThickness="1"
                             CornerRadius="10"
@@ -444,7 +455,7 @@
                                         Margin="0,4,0,0">
                                 <Button x:Uid="HomeEmptyAddAgent"
                                         Content="Add your first agent"
-                                        Style="{StaticResource AccentButtonStyle}"
+                                        Style="{StaticResource PaletteAccentButtonStyle}"
                                         AutomationProperties.AutomationId="EmptyStateAddAgentButton"
                                         Click="AddAnotherAgent_Click" />
                                 <HyperlinkButton x:Uid="HomeEmptyDocs"

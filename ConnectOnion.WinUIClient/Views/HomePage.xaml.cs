@@ -117,6 +117,11 @@ public sealed partial class HomePage : Page, IReloadablePage, IShutdownDisarmabl
     public ObservableCollection<HomeAgentItem> Agents { get; } = new();
     public bool HasAgents => Agents.Count > 0;
 
+    public int OnlineAgentCount => Agents.Count(agent => agent.Presence == AgentPresence.Online);
+    public bool HasOnlineAgents => OnlineAgentCount > 0;
+    public string OnlineAgentStatusText => OnlineAgentCount == 1 ? "1 AGENT ONLINE" : $"{OnlineAgentCount} AGENTS ONLINE";
+    public string OnlineAgentCountText => OnlineAgentCount == 1 ? "1 agent online" : $"{OnlineAgentCount} agents online";
+
     public HomePage()
     {
         InitializeComponent();
@@ -275,7 +280,11 @@ public sealed partial class HomePage : Page, IReloadablePage, IShutdownDisarmabl
             // Unsubscribing cannot retract a callback that was queued just before shutdown.
             if (Volatile.Read(ref _disposed) != 0) return;
             var item = Agents.FirstOrDefault(agent => agent.Id == agentId);
-            if (item is not null) ApplyPresence(item);
+            if (item is not null)
+            {
+                ApplyPresence(item);
+                Bindings.Update();
+            }
         });
     }
 
