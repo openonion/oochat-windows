@@ -41,17 +41,20 @@ public sealed partial class TypographyContractTests
     }
 
     [Fact]
-    public void TypeRamp_KeepsEssentialTextAtAccessibleCompactDefaults()
+    public void TypeRamp_UsesSharedReadableDefaults()
     {
         var root = FindRepositoryRoot();
         var typography = File.ReadAllText(Path.Combine(
             root, "ConnectOnion.WinUIClient", "Styles", "Typography.xaml"));
 
-        Assert.Contains("<x:Double x:Key=\"ProductMicroFontSize\">11</x:Double>", typography, StringComparison.Ordinal);
-        Assert.Contains("<x:Double x:Key=\"ProductCaptionFontSize\">12</x:Double>", typography, StringComparison.Ordinal);
-        Assert.Contains("<x:Double x:Key=\"ProductCodeFontSize\">13</x:Double>", typography, StringComparison.Ordinal);
-        Assert.Contains("<x:Double x:Key=\"ProductBodyFontSize\">14</x:Double>", typography, StringComparison.Ordinal);
-        Assert.Contains("<x:Double x:Key=\"ProductSubtitleFontSize\">16</x:Double>", typography, StringComparison.Ordinal);
+        Assert.Contains("<x:Double x:Key=\"ProductMicroFontSize\">12</x:Double>", typography, StringComparison.Ordinal);
+        Assert.Contains("<x:Double x:Key=\"ProductCaptionFontSize\">13</x:Double>", typography, StringComparison.Ordinal);
+        Assert.Contains("<x:Double x:Key=\"ProductCodeFontSize\">14</x:Double>", typography, StringComparison.Ordinal);
+        Assert.Contains("<x:Double x:Key=\"ProductBodyFontSize\">15</x:Double>", typography, StringComparison.Ordinal);
+        Assert.Contains("<x:Double x:Key=\"ProductSubtitleFontSize\">18</x:Double>", typography, StringComparison.Ordinal);
+        Assert.Contains("<x:Double x:Key=\"ProductSectionTitleFontSize\">22</x:Double>", typography, StringComparison.Ordinal);
+        Assert.Contains("<x:Double x:Key=\"ProductTitleFontSize\">26</x:Double>", typography, StringComparison.Ordinal);
+        Assert.Contains("<x:Double x:Key=\"ProductHeroFontSize\">32</x:Double>", typography, StringComparison.Ordinal);
     }
 
     [Fact]

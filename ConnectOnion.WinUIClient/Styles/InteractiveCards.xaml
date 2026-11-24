@@ -7,26 +7,29 @@
     <x:Double x:Key="InteractiveCardSpacing">12</x:Double>
     <x:Double x:Key="InteractiveControlMinHeight">40</x:Double>
     <Style x:Key="InteractiveCardTitleStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource ProductFontFamily}" />
         <Setter Property="FontSize" Value="{StaticResource ProductBodyFontSize}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Foreground" Value="{ThemeResource TextPrimaryBrush}" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
     <Style x:Key="InteractiveCardSubtitleStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource ProductFontFamily}" />
         <Setter Property="FontSize" Value="{StaticResource ProductCaptionFontSize}" />
         <Setter Property="Foreground" Value="{ThemeResource TextSecondaryBrush}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
     <Style x:Key="InteractiveCardBadgeTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource ProductFontFamily}" />
         <Setter Property="FontSize" Value="{StaticResource ProductMicroFontSize}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
-    <Style x:Key="InteractiveCardButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+    <Style x:Key="InteractiveCardButtonStyle" TargetType="Button" BasedOn="{StaticResource PaletteButtonStyle}">
         <Setter Property="MinHeight" Value="{StaticResource InteractiveControlMinHeight}" />
         <Setter Property="Padding" Value="14,6" />
     </Style>
-    <Style x:Key="InteractiveCardPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+    <Style x:Key="InteractiveCardPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource PaletteAccentButtonStyle}">
         <Setter Property="MinHeight" Value="{StaticResource InteractiveControlMinHeight}" />
         <Setter Property="Padding" Value="16,6" />
     </Style>
@@ -35,11 +38,13 @@
         <Setter Property="Padding" Value="10,6" />
     </Style>
     <Style x:Key="InteractiveFieldLabelStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource ProductFontFamily}" />
         <Setter Property="FontSize" Value="{StaticResource ProductCaptionFontSize}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Foreground" Value="{ThemeResource TextPrimaryBrush}" />
     </Style>
     <Style x:Key="InteractiveHelperTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource ProductFontFamily}" />
         <Setter Property="FontSize" Value="{StaticResource ProductMicroFontSize}" />
         <Setter Property="Foreground" Value="{ThemeResource TextSecondaryBrush}" />
         <Setter Property="TextWrapping" Value="Wrap" />

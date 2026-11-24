@@ -1,5 +1,6 @@
 using System;
 using ConnectOnion.WinUIClient.Models;
+using Microsoft.UI.Xaml;
 
 namespace ConnectOnion.WinUIClient.Services;
 
@@ -17,12 +18,16 @@ public static class MessageFontService
     public static event Action<double>? FontSizeChanged;
 
     /// <summary>Pixel size the chat bubbles render at for each preference step.</summary>
-    public static double ToPixels(MessageFontSize size) => size switch
+    public static double ToPixels(MessageFontSize size)
     {
-        MessageFontSize.Sm => 12,
-        MessageFontSize.Lg => 18,
-        _ => 14,
-    };
+        var bodySize = (double)Application.Current.Resources["ProductBodyFontSize"];
+        return size switch
+        {
+            MessageFontSize.Sm => bodySize - 2,
+            MessageFontSize.Lg => bodySize + 4,
+            _ => bodySize,
+        };
+    }
 
     /// <summary>Notifies open chat views of a new size. Called after the preference is updated.</summary>
     public static void Apply(MessageFontSize size) => FontSizeChanged?.Invoke(ToPixels(size));

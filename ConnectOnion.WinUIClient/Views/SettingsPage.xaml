@@ -17,7 +17,7 @@
         <StackPanel x:Name="ContentStack" MinWidth="0" Margin="{StaticResource SettingsContentMargin}"
                     HorizontalAlignment="Stretch" Spacing="{StaticResource Spacing20}">
             <TextBlock x:Uid="SettingsDescription" Text="Desktop preferences for this app."
-                       Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextSecondaryBrush}" />
+                       Style="{StaticResource ProductCaptionTextStyle}" Foreground="{ThemeResource TextSecondaryBrush}" />
 
             <InfoBar x:Name="SettingsErrorBar"
                      x:Uid="SettingsSaveError"
@@ -38,13 +38,14 @@
             <!-- Appearance is strictly how the app looks. Anything about how chat behaves or reads
                  lives in the Chat group below — both are shown for the "General" category. -->
             <StackPanel x:Name="GeneralSection" Spacing="4">
-                <TextBlock x:Uid="SettingsAppearance" AutomationProperties.HeadingLevel="Level2" Text="Appearance" Style="{StaticResource SubtitleTextBlockStyle}" Margin="2,0,0,4" />
+                <TextBlock x:Uid="SettingsAppearance" AutomationProperties.HeadingLevel="Level2" Text="Appearance" Style="{StaticResource ProductSubtitleTextStyle}" Margin="2,0,0,4" />
 
                 <ctk:SettingsCard x:Uid="SettingsTheme" Header="Theme"
-                                  Description="Use the system theme or choose light or dark mode.">
+                                  Description="Use the system theme or choose light or dark mode."
+                                  Background="{ThemeResource GreenBackgroundBrush}">
                     <RadioButtons x:Uid="SettingsThemeChoice" x:Name="ThemeChoice" MaxColumns="3"
                                   AutomationProperties.Name="Theme"
-                                  SelectionChanged="ThemeChoice_SelectionChanged">
+                                  SelectionChanged="ThemeChoice_SelectionChanged" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}">
                         <x:String>System</x:String>
                         <x:String>Light</x:String>
                         <x:String>Dark</x:String>
@@ -52,23 +53,25 @@
                 </ctk:SettingsCard>
 
                 <ctk:SettingsCard x:Uid="SettingsInterfaceTextSize" Header="Interface text size"
-                                  Description="Adjust text across navigation, settings, buttons, cards, and dialogs.">
+                                  Description="Adjust text across navigation, settings, buttons, cards, and dialogs."
+                                  Background="{ThemeResource GreenBackgroundBrush}">
                     <RadioButtons x:Uid="SettingsInterfaceTextSizeChoice"
                                   x:Name="InterfaceTextSizeChoice"
                                   MaxColumns="3"
                                   AutomationProperties.AutomationId="InterfaceTextSizeChoice"
                                   AutomationProperties.Name="Interface text size"
-                                  SelectionChanged="InterfaceTextSizeChoice_SelectionChanged" />
+                                  SelectionChanged="InterfaceTextSizeChoice_SelectionChanged" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}" />
                 </ctk:SettingsCard>
 
                 <ctk:SettingsCard x:Uid="SettingsLanguage" Header="Language"
-                                  Description="Choose the language used by ConnectOnion.">
+                                  Description="Choose the language used by ConnectOnion."
+                                  Background="{ThemeResource GreenBackgroundBrush}">
                     <ComboBox x:Uid="SettingsLanguageChoice" x:Name="LanguageChoice"
                               MinWidth="180"
                               HorizontalAlignment="Right"
                               AutomationProperties.AutomationId="LanguageChoice"
                               AutomationProperties.Name="Application language"
-                              SelectionChanged="LanguageChoice_SelectionChanged">
+                              SelectionChanged="LanguageChoice_SelectionChanged" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}">
                         <ComboBoxItem x:Uid="SettingsLanguageEnglish" Content="English" />
                         <ComboBoxItem x:Uid="SettingsLanguageChinese" Content="Simplified Chinese" />
                     </ComboBox>
@@ -100,16 +103,17 @@
                  remembered — with no way to change it afterwards, so a user who picked Exit had
                  turned the title-bar X into an unconfirmed quit, permanently. -->
             <StackPanel x:Name="WindowSection" Spacing="4">
-                <TextBlock x:Uid="SettingsWindow" AutomationProperties.HeadingLevel="Level2" Text="Window" Style="{StaticResource SubtitleTextBlockStyle}" Margin="2,0,0,4" />
+                <TextBlock x:Uid="SettingsWindow" AutomationProperties.HeadingLevel="Level2" Text="Window" Style="{StaticResource ProductSubtitleTextStyle}" Margin="2,0,0,4" />
 
                 <ctk:SettingsCard x:Uid="SettingsCloseBehavior" Header="When you close the window"
-                                  Description="Closing can keep agent turns running in the tray, or exit the app.">
+                                  Description="Closing can keep agent turns running in the tray, or exit the app."
+                                  Background="{ThemeResource GreenBackgroundBrush}">
                     <ComboBox x:Uid="SettingsCloseBehaviorChoice" x:Name="CloseBehaviorChoice"
                               MinWidth="180"
                               HorizontalAlignment="Right"
                               AutomationProperties.AutomationId="CloseBehaviorChoice"
                               AutomationProperties.Name="Window close behavior"
-                              SelectionChanged="CloseBehaviorChoice_SelectionChanged">
+                              SelectionChanged="CloseBehaviorChoice_SelectionChanged" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}">
                         <ComboBoxItem x:Uid="SettingsCloseBehaviorAsk" Content="Ask every time" />
                         <ComboBoxItem x:Uid="SettingsCloseBehaviorTray" Content="Keep running in the tray" />
                         <ComboBoxItem x:Uid="SettingsCloseBehaviorExit" Content="Exit ConnectOnion" />
@@ -118,13 +122,14 @@
             </StackPanel>
 
             <StackPanel x:Name="ChatSection" Spacing="4">
-                <TextBlock x:Uid="SettingsChat" AutomationProperties.HeadingLevel="Level2" Text="Chat" Style="{StaticResource SubtitleTextBlockStyle}" Margin="2,0,0,4" />
+                <TextBlock x:Uid="SettingsChat" AutomationProperties.HeadingLevel="Level2" Text="Chat" Style="{StaticResource ProductSubtitleTextStyle}" Margin="2,0,0,4" />
 
                 <ctk:SettingsCard x:Uid="SettingsMessageSize" Header="Message text size"
-                                  Description="Adjust how large chat messages appear.">
+                                  Description="Adjust how large chat messages appear."
+                                  Background="{ThemeResource GreenBackgroundBrush}">
                     <RadioButtons x:Uid="SettingsFontChoice" x:Name="FontChoice" MaxColumns="3"
                                   AutomationProperties.Name="Message text size"
-                                  SelectionChanged="FontChoice_SelectionChanged">
+                                  SelectionChanged="FontChoice_SelectionChanged" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}">
                         <x:String>Small</x:String>
                         <x:String>Medium</x:String>
                         <x:String>Large</x:String>
@@ -132,18 +137,19 @@
                 </ctk:SettingsCard>
 
                 <ctk:SettingsCard x:Uid="SettingsEnterToSend" Header="Enter to send"
-                                  Description="When enabled, Enter sends and Shift+Enter inserts a new line.">
+                                  Description="When enabled, Enter sends and Shift+Enter inserts a new line."
+                                  Background="{ThemeResource GreenBackgroundBrush}">
                     <ToggleSwitch x:Name="EnterToSendSwitch" AutomationProperties.AutomationId="EnterToSendSwitch"
                                   x:Uid="SettingsEnterToSendSwitch"
                                   OnContent="On"
                                   OffContent="Off"
                                   AutomationProperties.Name="Enter to send"
-                                  Toggled="EnterToSendSwitch_Toggled" />
+                                  Toggled="EnterToSendSwitch_Toggled" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}" />
                 </ctk:SettingsCard>
             </StackPanel>
 
             <StackPanel x:Name="NotificationsSection" Spacing="4" Visibility="Collapsed">
-                <TextBlock x:Uid="SettingsNotifications" AutomationProperties.HeadingLevel="Level2" Text="Notifications" Style="{StaticResource SubtitleTextBlockStyle}" Margin="2,0,0,4" />
+                <TextBlock x:Uid="SettingsNotifications" AutomationProperties.HeadingLevel="Level2" Text="Notifications" Style="{StaticResource ProductSubtitleTextStyle}" Margin="2,0,0,4" />
 
                 <InfoBar x:Uid="SettingsSystemNotificationsUnavailable"
                          x:Name="SystemNotificationsUnavailableInfoBar"
@@ -155,10 +161,11 @@
                          AutomationProperties.AutomationId="SystemNotificationsUnavailableInfoBar" />
 
                 <ctk:SettingsCard x:Uid="SettingsNotificationsEnable" Header="Enable notifications"
-                                  Description="Master switch for all in-app and Windows notifications.">
+                                  Description="Master switch for all in-app and Windows notifications."
+                                  Background="{ThemeResource GreenBackgroundBrush}">
                     <ToggleSwitch x:Uid="SettingsNotificationsSwitch" x:Name="EnableNotificationsSwitch" AutomationProperties.AutomationId="EnableNotificationsSwitch"
                                   AutomationProperties.Name="Enable notifications"
-                                  Toggled="EnableNotificationsSwitch_Toggled" />
+                                  Toggled="EnableNotificationsSwitch_Toggled" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}" />
                 </ctk:SettingsCard>
 
                 <ContentControl x:Name="NotificationDetailPanel"
@@ -166,61 +173,68 @@
                                 HorizontalContentAlignment="Stretch">
                     <StackPanel Spacing="4">
                         <ctk:SettingsCard x:Uid="SettingsAgentReplies" Header="Agent replies"
-                                          Description="Notify when an agent finishes replying in a conversation you're not viewing.">
+                                          Description="Notify when an agent finishes replying in a conversation you're not viewing."
+                                          Background="{ThemeResource GreenBackgroundBrush}">
                             <ToggleSwitch x:Uid="SettingsNotifyReplies" x:Name="NotifyAgentRepliesSwitch" AutomationProperties.AutomationId="NotifyAgentRepliesSwitch"
                                           AutomationProperties.Name="Notify for agent replies"
-                                          Toggled="NotificationDetail_Toggled" />
+                                          Toggled="NotificationDetail_Toggled" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}" />
                         </ctk:SettingsCard>
 
                         <ctk:SettingsCard x:Uid="SettingsTaskCompletion" Header="Task completion"
-                                          Description="Notify when a longer, multi-step task finishes.">
+                                          Description="Notify when a longer, multi-step task finishes."
+                                          Background="{ThemeResource GreenBackgroundBrush}">
                             <ToggleSwitch x:Uid="SettingsNotifyTasks" x:Name="NotifyTaskCompletionSwitch" AutomationProperties.AutomationId="NotifyTaskCompletionSwitch"
                                           AutomationProperties.Name="Notify for task completion"
-                                          Toggled="NotificationDetail_Toggled" />
+                                          Toggled="NotificationDetail_Toggled" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}" />
                         </ctk:SettingsCard>
 
                         <ctk:SettingsCard x:Uid="SettingsApprovalRequests" Header="Approval requests"
-                                          Description="Notify when an agent needs your approval to continue.">
+                                          Description="Notify when an agent needs your approval to continue."
+                                          Background="{ThemeResource GreenBackgroundBrush}">
                             <ToggleSwitch x:Uid="SettingsNotifyApprovals" x:Name="NotifyApprovalRequestsSwitch" AutomationProperties.AutomationId="NotifyApprovalRequestsSwitch"
                                           AutomationProperties.Name="Notify for approval requests"
-                                          Toggled="NotificationDetail_Toggled" />
+                                          Toggled="NotificationDetail_Toggled" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}" />
                         </ctk:SettingsCard>
 
                         <ctk:SettingsCard x:Uid="SettingsConnectionProblems" Header="Connection problems"
-                                          Description="Notify when an agent stays disconnected for a while.">
+                                          Description="Notify when an agent stays disconnected for a while."
+                                          Background="{ThemeResource GreenBackgroundBrush}">
                             <ToggleSwitch x:Uid="SettingsNotifyConnection" x:Name="NotifyConnectionProblemsSwitch" AutomationProperties.AutomationId="NotifyConnectionProblemsSwitch"
                                           AutomationProperties.Name="Notify for connection problems"
-                                          Toggled="NotificationDetail_Toggled" />
+                                          Toggled="NotificationDetail_Toggled" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}" />
                         </ctk:SettingsCard>
 
                         <ctk:SettingsCard x:Uid="SettingsPlaySound" Header="Play sound"
-                                          Description="Play a sound with Windows notifications.">
+                                          Description="Play a sound with Windows notifications."
+                                          Background="{ThemeResource GreenBackgroundBrush}">
                             <ToggleSwitch x:Uid="SettingsNotifySound" x:Name="PlayNotificationSoundSwitch" AutomationProperties.AutomationId="PlayNotificationSoundSwitch"
                                           AutomationProperties.Name="Play notification sound"
-                                          Toggled="NotificationDetail_Toggled" />
+                                          Toggled="NotificationDetail_Toggled" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}" />
                         </ctk:SettingsCard>
 
                         <ctk:SettingsCard x:Uid="SettingsMessagePreview" Header="Show message preview"
-                                          Description="Include a snippet of the reply. When off, notifications only say you have a new response.">
+                                          Description="Include a snippet of the reply. When off, notifications only say you have a new response."
+                                          Background="{ThemeResource GreenBackgroundBrush}">
                             <ToggleSwitch x:Uid="SettingsNotifyPreview" x:Name="ShowMessagePreviewSwitch" AutomationProperties.AutomationId="ShowMessagePreviewSwitch"
                                           AutomationProperties.Name="Show message preview"
-                                          Toggled="NotificationDetail_Toggled" />
+                                          Toggled="NotificationDetail_Toggled" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}" />
                         </ctk:SettingsCard>
                     </StackPanel>
                 </ContentControl>
             </StackPanel>
 
             <StackPanel x:Name="AudioSection" Spacing="4" Visibility="Collapsed">
-                <TextBlock x:Uid="SettingsAudio" AutomationProperties.HeadingLevel="Level2" Text="Audio" Style="{StaticResource SubtitleTextBlockStyle}" Margin="2,0,0,4" />
+                <TextBlock x:Uid="SettingsAudio" AutomationProperties.HeadingLevel="Level2" Text="Audio" Style="{StaticResource ProductSubtitleTextStyle}" Margin="2,0,0,4" />
 
                 <ctk:SettingsCard x:Uid="SettingsMicrophone" Header="Microphone"
-                                  Description="Choose the microphone for voice input. Recordings are sent to OpenOnion for cloud transcription after consent.">
+                                  Description="Choose the microphone for voice input. Recordings are sent to OpenOnion for cloud transcription after consent."
+                                  Background="{ThemeResource GreenBackgroundBrush}">
                     <ComboBox x:Uid="SettingsMicChoice" x:Name="MicChoice" AutomationProperties.AutomationId="MicChoice"
                               MinWidth="0" MaxWidth="260"
                               HorizontalAlignment="Stretch"
                               AutomationProperties.Name="Microphone"
                               DisplayMemberPath="Name"
-                              SelectionChanged="MicChoice_SelectionChanged" />
+                              SelectionChanged="MicChoice_SelectionChanged" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}" />
                 </ctk:SettingsCard>
             </StackPanel>
         </StackPanel>

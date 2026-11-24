@@ -35,7 +35,7 @@ public readonly record struct KeyChord(bool Ctrl, bool Shift, bool Alt, int KeyC
     }
 
     /// <summary>The persisted form, e.g. "Ctrl+Shift+N". Round-trips through <see cref="TryParse"/>.</summary>
-    public string Canonical => string.Join("+", DisplayKeys);
+    public string Canonical => string.Join(" + ", DisplayKeys);
 
     public override string ToString() => Canonical;
 

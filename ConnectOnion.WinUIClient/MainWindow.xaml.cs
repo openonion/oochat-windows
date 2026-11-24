@@ -466,7 +466,7 @@ public sealed partial class MainWindow : Window
 
                 if (backward)
                 {
-                    ContentFrame.GoBack();
+                    ContentFrame.GoBack(new SuppressNavigationTransitionInfo());
                     ReplaceLatestHistoryEntry(ContentFrame.ForwardStack, outgoingType, outgoingContext);
                 }
                 else
@@ -653,10 +653,8 @@ public sealed partial class MainWindow : Window
                 ?? await CaptureNavigationContextAsync(outgoingType);
             var targetContext = await CaptureNavigationContextAsync(page, parameter);
 
-            if (transitionInfo is null)
-                ContentFrame.Navigate(page, targetContext);
-            else
-                ContentFrame.Navigate(page, targetContext, transitionInfo);
+            // Page changes are instant; default to no transition rather than Frame's slide-up.
+            ContentFrame.Navigate(page, targetContext, transitionInfo ?? new SuppressNavigationTransitionInfo());
 
             // Frame copied the parameter with which the outgoing page was first opened. That can
             // be stale after an in-place agent reload, so replace the new history entry with a
@@ -754,7 +752,7 @@ public sealed partial class MainWindow : Window
     {
         CloseFindOverlay();
         if (ContentFrame.CurrentSourcePageType != page)
-            ContentFrame.Navigate(page);
+            ContentFrame.Navigate(page, null, new SuppressNavigationTransitionInfo());
 
         ContentFrame.BackStack.Clear();
         ContentFrame.ForwardStack.Clear();

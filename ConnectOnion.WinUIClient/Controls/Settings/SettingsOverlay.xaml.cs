@@ -14,7 +14,7 @@ public sealed record SettingsSearchResult(string Category, string Title);
 public sealed partial class SettingsOverlay : UserControl
 {
     private static readonly string[] SearchCategories =
-        ["General", "Agents", "Notifications", "Keyboard", "Identity", "Usage"];
+        ["General", "Notifications", "Keyboard", "Identity", "Usage"];
 
     private FrameworkElement? _focusReturnTarget;
     private string _selectedCategory = "General";
@@ -143,7 +143,6 @@ public sealed partial class SettingsOverlay : UserControl
         RequestClose();
     }
     private void GeneralNav_Click(object sender, RoutedEventArgs e) => SelectCategory("General");
-    private void AgentsNav_Click(object sender, RoutedEventArgs e) => SelectCategory("Agents");
     private void NotificationsNav_Click(object sender, RoutedEventArgs e) => SelectCategory("Notifications");
     private void IdentityNav_Click(object sender, RoutedEventArgs e) => SelectCategory("Identity");
     private void UsageNav_Click(object sender, RoutedEventArgs e) => SelectCategory("Usage");
@@ -166,15 +165,13 @@ public sealed partial class SettingsOverlay : UserControl
         CategoryTitle.Text = LocalizedCategoryName(category);
 
         var isIdentity = category == "Identity";
-        var isAgents = category == "Agents";
         var isUsage = category == "Usage";
         var isKeyboard = category == "Keyboard";
-        var isSettingsPage = !isIdentity && !isAgents && !isUsage && !isKeyboard;
+        var isSettingsPage = !isIdentity && !isUsage && !isKeyboard;
 
         SettingsContent.Visibility = isSettingsPage ? Visibility.Visible : Visibility.Collapsed;
         SettingsSearchResultsScrollViewer.Visibility = Visibility.Collapsed;
         IdentityScrollViewer.Visibility = isIdentity ? Visibility.Visible : Visibility.Collapsed;
-        AgentsScrollViewer.Visibility = isAgents ? Visibility.Visible : Visibility.Collapsed;
         UsageScrollViewer.Visibility = isUsage ? Visibility.Visible : Visibility.Collapsed;
         KeyboardScrollViewer.Visibility = isKeyboard ? Visibility.Visible : Visibility.Collapsed;
 
@@ -185,16 +182,12 @@ public sealed partial class SettingsOverlay : UserControl
         if (isUsage)
             UsageContent.Refresh();
 
-        if (isAgents)
-            AgentsContent.Refresh();
-
         // Bindings can have moved since this pane was last shown — the dialog cannot change them,
         // but a second window's Settings can.
         if (isKeyboard)
             KeyboardContent.Refresh();
     }
 
-    public Task RefreshAgentsAsync() => AgentsContent.RefreshAsync();
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         => ApplySettingsSearch(SearchBox.Text, CompactSearchBox);
     private void CompactSearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -219,7 +212,6 @@ public sealed partial class SettingsOverlay : UserControl
         // above all six categories.
         SettingsContent.Visibility = Visibility.Collapsed;
         IdentityScrollViewer.Visibility = Visibility.Collapsed;
-        AgentsScrollViewer.Visibility = Visibility.Collapsed;
         UsageScrollViewer.Visibility = Visibility.Collapsed;
         KeyboardScrollViewer.Visibility = Visibility.Collapsed;
         SettingsSearchResultsScrollViewer.Visibility = Visibility.Visible;
@@ -242,7 +234,6 @@ public sealed partial class SettingsOverlay : UserControl
         var searchable = category switch
         {
             "General" => LocalizedStrings.Get("SettingsSearchKeywordsGeneral", "general appearance theme language window startup chat audio microphone"),
-            "Agents" => LocalizedStrings.Get("SettingsSearchKeywordsAgents", "agents agent address connection icon avatar delete rename"),
             "Notifications" => LocalizedStrings.Get("SettingsSearchKeywordsNotifications", "notifications alerts sound banner toast approval reply"),
             "Keyboard" => LocalizedStrings.Get("SettingsSearchKeywordsKeyboard", "keyboard shortcuts hotkeys keys bindings"),
             "Identity" => LocalizedStrings.Get("SettingsSearchKeywordsIdentity", "identity address recovery phrase mnemonic private key seed backup restore"),
@@ -284,7 +275,6 @@ public sealed partial class SettingsOverlay : UserControl
         try
         {
             GeneralNav.IsChecked = category == "General";
-            AgentsNav.IsChecked = category == "Agents";
             NotificationsNav.IsChecked = category == "Notifications";
             KeyboardNav.IsChecked = category == "Keyboard";
             IdentityNav.IsChecked = category == "Identity";
@@ -292,11 +282,10 @@ public sealed partial class SettingsOverlay : UserControl
 
             var compactIndex = category switch
             {
-                "Agents" => 1,
-                "Notifications" => 2,
-                "Keyboard" => 3,
-                "Identity" => 4,
-                "Usage" => 5,
+                "Notifications" => 1,
+                "Keyboard" => 2,
+                "Identity" => 3,
+                "Usage" => 4,
                 _ => 0,
             };
 
@@ -311,7 +300,6 @@ public sealed partial class SettingsOverlay : UserControl
 
     private static string LocalizedCategoryName(string category) => category switch
     {
-        "Agents" => LocalizedStrings.Get("SettingsCategoryAgentsName", "Agents"),
         "Notifications" => LocalizedStrings.Get("SettingsCategoryNotificationsName", "Notifications"),
         "Keyboard" => LocalizedStrings.Get("SettingsCategoryKeyboardName", "Keyboard"),
         "Identity" => LocalizedStrings.Get("SettingsCategoryIdentityName", "Identity"),

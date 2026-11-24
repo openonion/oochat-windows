@@ -59,7 +59,7 @@
                               Visibility="{x:Bind IsChecking, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
                 <Button MinWidth="0"
                         Padding="10,6"
-                        Style="{StaticResource AccentButtonStyle}"
+                        Style="{StaticResource PaletteAccentButtonStyle}"
                         IsEnabled="{x:Bind CanRecheck, Mode=OneWay}"
                         Click="Recheck_Click"
                         Visibility="{x:Bind IsChecking, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=invert}">

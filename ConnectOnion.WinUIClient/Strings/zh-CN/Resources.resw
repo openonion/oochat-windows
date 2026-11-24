@@ -196,11 +196,6 @@
   <data name="UsageEmpty.Text" xml:space="preserve"><value>暂无用量记录</value></data>
   <data name="UsageEmptyHint.Text" xml:space="preserve"><value>Agent 回复后，Token 用量会显示在这里。</value></data>
   <data name="UsageClear.Content" xml:space="preserve"><value>清除用量历史</value></data>
-  <data name="AgentsSettingsDescription.Text" xml:space="preserve"><value>管理连接到此设备的 Agent。删除 Agent 也会删除其本地对话。</value></data>
-  <data name="AgentsSettingsConnectAnother.Text" xml:space="preserve"><value>连接另一个 Agent 以开始新对话。</value></data>
-  <data name="AgentsSettingsAdd.Text" xml:space="preserve"><value>添加 Agent</value></data>
-  <data name="AgentsSettingsEmpty.Text" xml:space="preserve"><value>没有已连接的 Agent</value></data>
-  <data name="AgentsSettingsEmptyHint.Text" xml:space="preserve"><value>添加 Agent 以开始对话。</value></data>
   <data name="IdentityDescription.Text" xml:space="preserve"><value>此桌面客户端使用 Ed25519 身份为 ConnectOnion 消息签名。Agent 通过下方地址识别你。</value></data>
   <data name="IdentityAddress.Text" xml:space="preserve"><value>地址</value></data>
   <data name="IdentityPublicKey.Text" xml:space="preserve"><value>公钥</value></data>
