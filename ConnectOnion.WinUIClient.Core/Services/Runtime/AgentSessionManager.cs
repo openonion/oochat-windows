@@ -660,13 +660,10 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
         if (connection is null) return Task.CompletedTask;
 
         // Remembered for the next CONNECT this socket makes (only a brand-new session keeps it —
-        // the host's merge discards ours otherwise), and pushed now if a turn is live to receive
-        // it. With no turn running the host would drop a mode_change on the floor, so we don't
-        // send one: SendMessageAsync carries the mode with the INPUT instead.
+        // the host's merge discards ours otherwise). No mode_change is pushed to a live turn;
+        // see AgentConnectionService.SendInputAsync.
         connection.InitialMode = mode;
-
-        var run = _runs.GetActiveRun(conversationId);
-        return run is { IsTerminal: false } ? connection.SetModeAsync(mode) : Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     private void NotifyApproval(AgentConfig agent, string conversationId, ApprovalRequest r)
