@@ -29,7 +29,7 @@ public sealed partial class WinUiMarkdownRenderer : RendererBase
     /// inside them. One instance: it is immutable, and the descent cache in
     /// <see cref="HighlightedTextBlock"/> keys off its <c>Source</c>.</summary>
     private static readonly FontFamily CodeFont =
-        new("ms-appx:///Assets/Fonts/JetBrainsMonoNerdFontMono-Regular.ttf#JetBrainsMono NFM");
+        (FontFamily)Application.Current.Resources["JetBrainsMonoFontFamily"];
 
     private readonly RichTextBlock _target;
     private readonly Stack<InlineCollection> _inlineScopes = new();
@@ -484,6 +484,7 @@ public sealed partial class WinUiMarkdownRenderer : RendererBase
             var codeSpan = new Span
             {
                 FontFamily = CodeFont,
+                FontSize = MessageCodeFontSize,
                 Foreground = ResolveBrush("CodeTextBrush"),
             };
             WriteHighlightedText(
@@ -503,7 +504,7 @@ public sealed partial class WinUiMarkdownRenderer : RendererBase
         var codeText = new RichTextBlock
         {
             FontFamily = CodeFont,
-            FontSize = _target.FontSize,
+            FontSize = MessageCodeFontSize,
             Foreground = ResolveBrush("CodeTextBrush"),
         };
         var codeParagraph = new Paragraph();
@@ -521,7 +522,7 @@ public sealed partial class WinUiMarkdownRenderer : RendererBase
         // Drop the chip back onto the text baseline. Here we are aligning the code *text* with the
         // prose text, so the offset is the code font's own descender plus the padding under it.
         HighlightedTextBlock.ApplyBaselineNudge(
-            border, _target.FontSize, bottomPadding: 1, fontFamily: CodeFont);
+            border, MessageCodeFontSize, bottomPadding: 1, fontFamily: CodeFont);
         CurrentInlines.Add(new InlineUIContainer { Child = border });
     }
 
@@ -750,7 +751,7 @@ public sealed partial class WinUiMarkdownRenderer : RendererBase
         var codeText = new RichTextBlock
         {
             FontFamily = CodeFont,
-            FontSize = _target.FontSize,
+            FontSize = MessageCodeFontSize,
             Foreground = ResolveBrush("CodeTextBrush"),
             TextWrapping = TextWrapping.NoWrap,
         };
@@ -790,7 +791,9 @@ public sealed partial class WinUiMarkdownRenderer : RendererBase
                 Child = new TextBlock
                 {
                     FontFamily = CodeFont,
-                    FontSize = Math.Max(11, _target.FontSize - 2),
+                    FontSize = Math.Max(
+                        (double)Application.Current.Resources["ProductMicroFontSize"],
+                        _target.FontSize - 3),
                     FontWeight = FontWeights.SemiBold,
                     Foreground = ResolveBrush("TextFillColorSecondaryBrush"),
                     Text = language,
@@ -824,6 +827,10 @@ public sealed partial class WinUiMarkdownRenderer : RendererBase
         paragraph.Inlines.Add(new InlineUIContainer { Child = border });
         _target.Blocks.Add(paragraph);
     }
+
+    private double MessageCodeFontSize => Math.Max(
+        (double)Application.Current.Resources["ProductMicroFontSize"],
+        _target.FontSize - 1);
 
     private static string? GetCodeLanguage(FencedCodeBlock block)
     {

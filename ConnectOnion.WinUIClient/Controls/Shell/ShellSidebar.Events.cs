@@ -502,16 +502,30 @@ public sealed partial class ShellSidebar
                         "This local conversation will be removed."))) return;
 
             var wasActive = await AppServices.Sessions.GetActiveSessionIdAsync() == sessionId;
+            // Only the deleting conversation on screen forces a page change. Deleting some other chat from
+            // the sidebar (while on Home, an agent page, or a different chat) leaves the user where they are.
+            var deletingCurrentSurface = wasActive && _currentPageType == typeof(ChatPage);
 
             ConversationCache.Invalidate(sessionId);
             await AppServices.RunManager.ReleaseConversationAsync(sessionId);
             // Children, index row, pin, and active pointer commit as one unit.
             await AppServices.Sessions.DeleteSessionAsync(sessionId);
 
+            var remainingForAgent = await AppServices.Sessions.LoadAgentSessionsAsync(session.AgentId, limit: 1);
+
+            if (wasActive && remainingForAgent.Sessions.Count > 0)
+                await AppServices.Sessions.SetActiveSessionAsync(remainingForAgent.Sessions[0].Id);
+
+            if (!deletingCurrentSurface)
+            {
+                await RefreshAsync();
+                RefreshCurrentAgentSurface();
+                return;
+            }
+
             // No conversations left for this agent — go back to the agent page
             // instead of silently starting a fresh conversation, so deleting the
             // last chat doesn't just spawn another one in its place.
-            var remainingForAgent = await AppServices.Sessions.LoadAgentSessionsAsync(session.AgentId, limit: 1);
             if (remainingForAgent.Sessions.Count == 0)
             {
                 await AppServices.Agents.SetSelectedAgentAsync(session.AgentId);
@@ -520,11 +534,6 @@ public sealed partial class ShellSidebar
                 RequestNavigation(typeof(AgentDetailPage), forceReload: true);
                 return;
             }
-
-            // DeleteSessionAsync already dropped the pointer if it named this conversation; pick the
-            // successor here — the agent's most recent, else the most recent anywhere.
-            // Count > 0 is established above, so the agent's own most recent always exists here.
-            if (wasActive) await AppServices.Sessions.SetActiveSessionAsync(remainingForAgent.Sessions[0].Id);
 
             await RefreshAsync();
             RequestNavigation(typeof(ChatPage), forceReload: true);

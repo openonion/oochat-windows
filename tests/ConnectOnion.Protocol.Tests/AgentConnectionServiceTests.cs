@@ -437,32 +437,25 @@ public sealed class AgentConnectionServiceTests
     }
 
     [Fact]
-    public async Task SendInputAsync_WithMode_SendsModeChangeOnTheFrameAfterInput()
+    public async Task SendInputAsync_WithMode_CarriesModeOnConnectWithoutAFollowUpModeChange()
     {
         string? connectJson = null;
         string? inputJson = null;
-        string? modeJson = null;
         await using var server = new FakeAgentServer(async (socket, ct) =>
         {
             connectJson = await FakeAgentServer.ReceiveTextAsync(socket, ct);
             await FakeAgentServer.SendTextAsync(socket, "{\"type\":\"CONNECTED\",\"session_id\":\"s1\"}", ct);
             inputJson = await FakeAgentServer.ReceiveTextAsync(socket, ct);
-            modeJson = await FakeAgentServer.ReceiveTextAsync(socket, ct);
+            // No mode_change frame is expected behind the INPUT; the turn completes directly.
             await FakeAgentServer.SendTextAsync(socket, "{\"type\":\"OUTPUT\",\"result\":\"ok\"}", ct);
         });
         await using var service = Service(server);
 
-        await service.SendInputAsync("hello", "s1", mode: AgentModes.Plan);
-
-        // Order is the whole point: the host only hands a mode_change to a *running* agent, so it
-        // has to arrive behind the INPUT that spawns one. Sent first, it would be dropped.
+        Assert.Equal("ok", await service.SendInputAsync("hello", "s1", mode: AgentModes.Plan));
         Assert.Equal("INPUT", WireMessage.Parse(inputJson!).Type);
-        var mode = WireMessage.Parse(modeJson!);
-        Assert.Equal("mode_change", mode.Type);
-        Assert.Equal("plan", mode.GetString("mode"));
 
-        // And it rides on the CONNECT too, which is the only thing that can set the mode of a
-        // session the host has never run before (its session merge discards ours after that).
+        // The mode rides on the CONNECT, which is what sets the mode of a session the host has
+        // never run before (its session merge discards ours after that).
         var connect = WireMessage.Parse(connectJson!);
         Assert.True(connect.TryGet("session", out var session));
         Assert.Equal("plan", session.GetProperty("mode").GetString());

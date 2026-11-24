@@ -459,10 +459,6 @@
                                                    Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
-                                    <TextBlock Text="{x:Bind UpdatedAtLabel}"
-                                               FontSize="{StaticResource ProductMicroFontSize}"
-                                               Foreground="{ThemeResource TextTertiaryBrush}"
-                                               VerticalAlignment="Center" />
                                 </StackPanel>
                             </Grid>
                         </Button>
@@ -515,7 +511,7 @@
         <!-- Brand and live presence follow the same two-line hierarchy as the compact
              ConnectOnion clients: identity first, runtime status second. -->
         <Grid Grid.Row="0"
-              MinHeight="60"
+              MinHeight="38"
               Padding="4,2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -544,29 +540,6 @@
                                FontSize="{StaticResource ProductMicroFontSize}"
                                Foreground="{ThemeResource TextTertiaryBrush}" />
                 </Border>
-            </StackPanel>
-
-            <StackPanel Grid.Row="1"
-                        Orientation="Horizontal"
-                        Spacing="7"
-                        Margin="2,6,0,0"
-                        VerticalAlignment="Center"
-                        AutomationProperties.Name="{x:Bind OnlineAgentCountText, Mode=OneWay}">
-                <Ellipse Width="6"
-                         Height="6"
-                         Fill="{ThemeResource SuccessBrush}"
-                         Visibility="{x:Bind HasOnlineAgents, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
-                <Ellipse Width="6"
-                         Height="6"
-                         Stroke="{ThemeResource TextTertiaryBrush}"
-                         StrokeThickness="1"
-                         Visibility="{x:Bind HasOnlineAgents, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
-                <TextBlock Text="{x:Bind OnlineAgentStatusText, Mode=OneWay}"
-                           FontFamily="{StaticResource JetBrainsMonoFontFamily}"
-                           FontSize="{StaticResource ProductMicroFontSize}"
-                           CharacterSpacing="70"
-                           Foreground="{ThemeResource TextSecondaryBrush}"
-                           VerticalAlignment="Center" />
             </StackPanel>
         </Grid>
 

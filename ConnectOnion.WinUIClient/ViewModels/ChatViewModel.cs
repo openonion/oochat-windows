@@ -102,7 +102,7 @@ public sealed partial class ChatViewModel : PresenceAwareViewModel, IChatProject
         // Partial-property [ObservableProperty] declarations can't carry initializers, so the
         // non-default seeds live here.
         HeaderText = LocalizedStrings.Get("ChatHeader", "Chat");
-        MessageFontSize = 14;
+        MessageFontSize = MessageFontService.ToPixels(ConnectOnion.WinUIClient.Models.MessageFontSize.Md);
         EnterToSend = true;
         CurrentMode = AgentModes.Safe;
         LiveUsageText = "";
@@ -125,9 +125,18 @@ public sealed partial class ChatViewModel : PresenceAwareViewModel, IChatProject
             // refreshes there because it also has to wire the approval responder.
             RefreshPendingInteractive();
 
+            // Add turn's usage summary to reply
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset)
+                ChatTurnUsageLinker.LinkAll(Messages);
+
             if (e.NewItems is null) return;
+
+            var index = e.NewStartingIndex;
             foreach (ChatMessage message in e.NewItems)
+            {
                 message.MessageFontSize = MessageFontSize;
+                if (index >= 0) ChatTurnUsageLinker.LinkPrecedingUsage(Messages, index++);
+            }
         };
 
         // Ticks the "Thinking... 3s" counter. A DispatcherTimer (not a threading one) because it

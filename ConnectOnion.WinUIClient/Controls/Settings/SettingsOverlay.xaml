@@ -27,6 +27,10 @@
                                     Margin="0"
                                     CornerRadius="8"
                                     Background="Transparent" />
+                            <Border x:Name="HoverBackground"
+                                    Margin="0"
+                                    CornerRadius="8"
+                                    Background="Transparent" />
                             <Border x:Name="SelectionRail"
                                     Width="3"
                                     Height="20"
@@ -46,12 +50,12 @@
                                     <VisualState x:Name="Normal" />
                                     <VisualState x:Name="PointerOver">
                                         <VisualState.Setters>
-                                            <Setter Target="NavBackground.Background" Value="{ThemeResource SurfaceHoverBrush}" />
+                                            <Setter Target="HoverBackground.Background" Value="{ThemeResource SidebarItemHoverBrush}" />
                                         </VisualState.Setters>
                                     </VisualState>
                                     <VisualState x:Name="Pressed">
                                         <VisualState.Setters>
-                                            <Setter Target="NavBackground.Background" Value="{ThemeResource SurfacePressedBrush}" />
+                                            <Setter Target="HoverBackground.Background" Value="{ThemeResource SurfacePressedBrush}" />
                                         </VisualState.Setters>
                                     </VisualState>
                                     <VisualState x:Name="Disabled">
@@ -64,7 +68,7 @@
                                     <VisualState x:Name="Unchecked" />
                                     <VisualState x:Name="Checked">
                                         <VisualState.Setters>
-                                            <Setter Target="NavBackground.Background" Value="{ThemeResource SurfaceSelectedBrush}" />
+                                            <Setter Target="NavBackground.Background" Value="{ThemeResource GreenBackgroundBrush}" />
                                             <Setter Target="SelectionRail.Opacity" Value="1" />
                                         </VisualState.Setters>
                                     </VisualState>
@@ -108,7 +112,8 @@
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                 <TextBox x:Uid="SettingsSearch" x:Name="SearchBox" PlaceholderText="Search settings" TextChanged="SearchBox_TextChanged"
                              AutomationProperties.AutomationId="SettingsSearchBox"
-                             AutomationProperties.Name="Search settings" />
+                             AutomationProperties.Name="Search settings"
+                             Background="{ThemeResource GreenBackgroundBrush}" />
                     <ScrollViewer Grid.Row="1" Margin="0,14,0,0"
                                   HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto">
@@ -116,35 +121,29 @@
                             <RadioButton x:Uid="SettingsNavGeneral" x:Name="GeneralNav" GroupName="SettingsCategory" IsChecked="True"
                                 Style="{StaticResource SettingsNavButtonStyle}" Click="GeneralNav_Click"
                                 AutomationProperties.AutomationId="GeneralNav"
-                                AutomationProperties.Name="General settings">
+                                AutomationProperties.Name="General settings" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}">
                         <StackPanel Orientation="Horizontal" Spacing="10"><ic:FluentIcon Style="{StaticResource SettingsNavIconStyle}" Icon="Settings"/><TextBlock x:Uid="SettingsCategoryGeneral" x:Name="GeneralNavLabel" Text="General"/></StackPanel>
-                            </RadioButton>
-                            <RadioButton x:Uid="SettingsNavAgents" x:Name="AgentsNav" GroupName="SettingsCategory"
-                                Style="{StaticResource SettingsNavButtonStyle}" Click="AgentsNav_Click"
-                                AutomationProperties.AutomationId="AgentsNav"
-                                AutomationProperties.Name="Agent settings">
-                        <StackPanel Orientation="Horizontal" Spacing="10"><ic:FluentIcon Style="{StaticResource SettingsNavIconStyle}" Icon="Bot"/><TextBlock x:Uid="SettingsCategoryAgents" x:Name="AgentsNavLabel" Text="Agents"/></StackPanel>
                             </RadioButton>
                             <RadioButton x:Uid="SettingsNavNotifications" x:Name="NotificationsNav" GroupName="SettingsCategory" Style="{StaticResource SettingsNavButtonStyle}"
                                 Click="NotificationsNav_Click"
                                 AutomationProperties.AutomationId="NotificationsNav"
-                                AutomationProperties.Name="Notification settings">
+                                AutomationProperties.Name="Notification settings" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}">
                         <StackPanel Orientation="Horizontal" Spacing="10"><ic:FluentIcon Style="{StaticResource SettingsNavIconStyle}" Icon="Alert"/><TextBlock x:Uid="SettingsCategoryNotifications" x:Name="NotificationsNavLabel" Text="Notifications"/></StackPanel>
                             </RadioButton>
                             <RadioButton x:Uid="SettingsNavKeyboard" x:Name="KeyboardNav" GroupName="SettingsCategory" Style="{StaticResource SettingsNavButtonStyle}"
                                 Click="KeyboardNav_Click"
                                 AutomationProperties.AutomationId="KeyboardNav"
-                                AutomationProperties.Name="Keyboard shortcuts settings">
+                                AutomationProperties.Name="Keyboard shortcuts settings" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}">
                         <StackPanel Orientation="Horizontal" Spacing="10"><ic:FluentIcon Style="{StaticResource SettingsNavIconStyle}" Icon="Keyboard"/><TextBlock x:Uid="SettingsCategoryKeyboard" x:Name="KeyboardNavLabel" Text="Keyboard"/></StackPanel>
                             </RadioButton>
                             <RadioButton x:Uid="SettingsNavIdentity" x:Name="IdentityNav" GroupName="SettingsCategory" Style="{StaticResource SettingsNavButtonStyle}"
                                 Click="IdentityNav_Click" AutomationProperties.AutomationId="IdentityNav"
-                                AutomationProperties.Name="Identity settings">
+                                AutomationProperties.Name="Identity settings" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}">
                         <StackPanel Orientation="Horizontal" Spacing="10"><ic:FluentIcon Style="{StaticResource SettingsNavIconStyle}" Icon="Key"/><TextBlock x:Uid="SettingsCategoryIdentity" x:Name="IdentityNavLabel" Text="Identity"/></StackPanel>
                             </RadioButton>
                             <RadioButton x:Uid="SettingsNavUsage" x:Name="UsageNav" GroupName="SettingsCategory" Style="{StaticResource SettingsNavButtonStyle}"
                                 Click="UsageNav_Click" AutomationProperties.AutomationId="UsageNav"
-                                AutomationProperties.Name="Token usage">
+                                AutomationProperties.Name="Token usage" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}">
                         <StackPanel Orientation="Horizontal" Spacing="10"><ic:FluentIcon Style="{StaticResource SettingsNavIconStyle}" Icon="DataUsage"/><TextBlock x:Uid="SettingsCategoryUsage" x:Name="UsageNavLabel" Text="Usage"/></StackPanel>
                             </RadioButton>
                         </StackPanel>
@@ -159,7 +158,7 @@
                           MinWidth="0"
                           Padding="{StaticResource SettingsHeaderPadding}">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                        <TextBlock x:Name="CategoryTitle" AutomationProperties.HeadingLevel="Level1" x:Uid="SettingsCategoryGeneralHeading" Text="General" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
+                        <TextBlock x:Name="CategoryTitle" AutomationProperties.HeadingLevel="Level1" x:Uid="SettingsCategoryGeneralHeading" Text="General" Style="{StaticResource ProductTitleTextStyle}" VerticalAlignment="Center" />
                         <StackPanel x:Name="CompactNavigation"
                                     MaxWidth="420"
                                     Margin="0,0,12,0"
@@ -169,9 +168,8 @@
                                       HorizontalAlignment="Stretch"
                                       SelectionChanged="CompactCategoryPicker_SelectionChanged"
                                       AutomationProperties.AutomationId="SettingsCategoryPicker"
-                                      AutomationProperties.Name="Settings category">
+                                      AutomationProperties.Name="Settings category" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}">
                                 <ComboBoxItem x:Uid="SettingsCompactCategoryGeneral" Content="General" Tag="General" />
-                                <ComboBoxItem x:Uid="SettingsCompactCategoryAgents" Content="Agents" Tag="Agents" />
                                 <ComboBoxItem x:Uid="SettingsCompactCategoryNotifications" Content="Notifications" Tag="Notifications" />
                                 <ComboBoxItem x:Uid="SettingsCompactCategoryKeyboard" Content="Keyboard" Tag="Keyboard" />
                                 <ComboBoxItem x:Uid="SettingsCompactCategoryIdentity" Content="Identity" Tag="Identity" />
@@ -222,12 +220,6 @@
                                   HorizontalContentAlignment="Stretch">
                         <controls:IdentitySettingsContent x:Name="IdentityContent" Margin="{StaticResource SettingsContentMargin}" />
                     </ScrollViewer>
-                    <ScrollViewer x:Name="AgentsScrollViewer" Grid.Row="1" Visibility="Collapsed"
-                                  HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
-                                  VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto"
-                                  HorizontalContentAlignment="Stretch">
-                        <controls:AgentsSettingsContent x:Name="AgentsContent" Margin="{StaticResource SettingsContentMargin}" />
-                    </ScrollViewer>
                     <ScrollViewer x:Name="UsageScrollViewer" Grid.Row="1" Visibility="Collapsed"
                                   HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto"
@@ -264,7 +256,6 @@
                         <Setter Target="CategoryTitle.Visibility" Value="Collapsed" />
                         <Setter Target="CompactNavigation.Visibility" Value="Visible" />
                         <Setter Target="IdentityContent.Margin" Value="16,6,16,20" />
-                        <Setter Target="AgentsContent.Margin" Value="16,6,16,20" />
                         <Setter Target="UsageContent.Margin" Value="16,6,16,20" />
                         <Setter Target="KeyboardContent.Margin" Value="16,6,16,20" />
                     </VisualState.Setters>
@@ -280,7 +271,6 @@
                         <Setter Target="CategoryTitle.Visibility" Value="Visible" />
                         <Setter Target="CompactNavigation.Visibility" Value="Collapsed" />
                         <Setter Target="GeneralNavLabel.Visibility" Value="Visible" />
-                        <Setter Target="AgentsNavLabel.Visibility" Value="Visible" />
                         <Setter Target="NotificationsNavLabel.Visibility" Value="Visible" />
                         <Setter Target="KeyboardNavLabel.Visibility" Value="Visible" />
                         <Setter Target="IdentityNavLabel.Visibility" Value="Visible" />

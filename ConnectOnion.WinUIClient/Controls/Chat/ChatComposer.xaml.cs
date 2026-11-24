@@ -544,6 +544,12 @@ public sealed partial class ChatComposer : UserControl, IDisposable
         ModeButton.Visibility = ShowModeSelector ? Visibility.Visible : Visibility.Collapsed;
         if (!ShowModeSelector) return;
 
+        ModeButton.ApplyTemplate();
+        if (FindNamedPanel(ModeButton, "RootGrid") is { } modeButtonRoot)
+        {
+            modeButtonRoot.BackgroundTransition = null;
+        }
+
         var mode = Mode;
         ModeLabel.Text = AgentModes.DisplayName(mode);
         var shortcut = AppServices.Shortcuts
@@ -563,6 +569,25 @@ public sealed partial class ChatComposer : UserControl, IDisposable
         ModeSafeItem.IsChecked = mode == AgentModes.Safe;
         ModeAcceptEditsItem.IsChecked = mode == AgentModes.AcceptEdits;
         ModePlanItem.IsChecked = mode == AgentModes.Plan;
+    }
+
+    private static Panel? FindNamedPanel(DependencyObject root, string name)
+    {
+        if (root is Panel panel && root is FrameworkElement element &&
+            string.Equals(element.Name, name, StringComparison.Ordinal))
+        {
+            return panel;
+        }
+
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+        {
+            if (FindNamedPanel(VisualTreeHelper.GetChild(root, index), name) is { } match)
+            {
+                return match;
+            }
+        }
+
+        return null;
     }
 
     private void Mode_Click(object sender, RoutedEventArgs e)

@@ -72,7 +72,7 @@
                                              HorizontalAlignment="Stretch"
                                              IsChecked="{x:Bind IsApproved, Mode=OneWay}"
                                              Click="ApproveSection_Click"
-                                             AutomationProperties.Name="{x:Bind ApproveAccessibilityName}">
+                                             AutomationProperties.Name="{x:Bind ApproveAccessibilityName}" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}">
                                     <TextBlock x:Uid="PlanSectionLooksGoodText" Text="Looks good" TextWrapping="Wrap" />
                                 </RadioButton>
                                 <RadioButton Grid.Column="1"
@@ -81,7 +81,7 @@
                                              HorizontalAlignment="Stretch"
                                              IsChecked="{x:Bind NeedsChanges, Mode=OneWay}"
                                              Click="RequestSectionChanges_Click"
-                                             AutomationProperties.Name="{x:Bind ChangesAccessibilityName}">
+                                             AutomationProperties.Name="{x:Bind ChangesAccessibilityName}" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}">
                                     <TextBlock x:Uid="PlanSectionNeedsChangesText" Text="Needs changes" TextWrapping="Wrap" />
                                 </RadioButton>
                             </Grid>

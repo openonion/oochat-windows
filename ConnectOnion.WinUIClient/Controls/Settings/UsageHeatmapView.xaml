@@ -88,10 +88,10 @@
         <!-- Header: the count carries the meaning, the range is the caption under it. -->
         <StackPanel Spacing="2">
             <TextBlock x:Name="SummaryText"
-                       Style="{StaticResource BodyStrongTextBlockStyle}"
+                       Style="{StaticResource ProductBodyStrongTextStyle}"
                        Foreground="{ThemeResource TextPrimaryBrush}" />
             <TextBlock x:Name="RangeText"
-                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Style="{StaticResource ProductCaptionTextStyle}"
                        Foreground="{ThemeResource TextSecondaryBrush}" />
         </StackPanel>
 
@@ -156,7 +156,7 @@
                     Spacing="4"
                     VerticalAlignment="Center">
             <TextBlock x:Uid="UsageHeatmapLess" Text="Less"
-                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Style="{StaticResource ProductCaptionTextStyle}"
                        Foreground="{ThemeResource TextSecondaryBrush}"
                        VerticalAlignment="Center"
                        Margin="0,0,2,0" />
@@ -166,7 +166,7 @@
             <Rectangle Style="{StaticResource HeatmapLegendSwatchStyle}" Fill="{ThemeResource HeatmapLevel3Brush}" />
             <Rectangle Style="{StaticResource HeatmapLegendSwatchStyle}" Fill="{ThemeResource HeatmapLevel4Brush}" />
             <TextBlock x:Uid="UsageHeatmapMore" Text="More"
-                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Style="{StaticResource ProductCaptionTextStyle}"
                        Foreground="{ThemeResource TextSecondaryBrush}"
                        VerticalAlignment="Center"
                        Margin="2,0,0,0" />

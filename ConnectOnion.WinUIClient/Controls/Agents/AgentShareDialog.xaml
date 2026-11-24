@@ -42,17 +42,19 @@
             </Grid>
         </Border>
         <StackPanel Spacing="4">
-                <TextBlock x:Uid="AgentShareWebChat" Text="Web chat" Style="{StaticResource CaptionTextBlockStyle}" />
+                <TextBlock x:Uid="AgentShareWebChat" Text="Web chat" Style="{StaticResource ProductCaptionTextStyle}" />
             <TextBlock x:Name="WebUrlText"
                        TextWrapping="Wrap"
                        IsTextSelectionEnabled="True"
+                       FontSize="{StaticResource ProductCodeFontSize}"
                        FontFamily="{StaticResource JetBrainsMonoFontFamily}" />
         </StackPanel>
         <StackPanel Spacing="4">
-                <TextBlock x:Uid="AgentShareAddress" Text="Agent address" Style="{StaticResource CaptionTextBlockStyle}" />
+                <TextBlock x:Uid="AgentShareAddress" Text="Agent address" Style="{StaticResource ProductCaptionTextStyle}" />
             <TextBlock x:Name="AddressText"
                        TextWrapping="Wrap"
                        IsTextSelectionEnabled="True"
+                       FontSize="{StaticResource ProductCodeFontSize}"
                        FontFamily="{StaticResource JetBrainsMonoFontFamily}" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">

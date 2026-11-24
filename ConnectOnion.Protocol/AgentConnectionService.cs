@@ -37,7 +37,7 @@ public sealed class AgentConnectionService : IAsyncDisposable
     private const int SilenceTimeoutMs = 60_000;
     private const int WatchdogIntervalMs = 10_000;
 
-    private readonly string _address;
+    private string _address;
     private readonly string? _directUrl;
     private readonly string _relayUrl;
     private readonly AgentIdentity _identity;
@@ -194,6 +194,38 @@ public sealed class AgentConnectionService : IAsyncDisposable
 
         if (_directUrl is not null)
         {
+            if (string.IsNullOrWhiteSpace(_address))
+            {
+                var uri = new Uri(_directUrl);
+                var infoUri = new UriBuilder(uri)
+                {
+                    Path = uri.AbsolutePath.TrimEnd('/') + "/info",
+                    Query = null,
+                    Fragment = null
+                }.Uri;
+
+                var response = await _http.GetAsync(infoUri, ct);
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync(ct);
+                using var doc = JsonDocument.Parse(json);
+
+                if (doc.RootElement.TryGetProperty("address", out var addrProp) &&
+                    addrProp.ValueKind == JsonValueKind.String)
+                {
+                    var rawAddress = addrProp.GetString();
+                    if (!string.IsNullOrWhiteSpace(rawAddress))
+                    {
+                        _address = rawAddress.Trim();
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(_address))
+                {
+                    throw new InvalidOperationException("Could not get a valid address from the agent info endpoint");
+                }
+            }
+
             _wsUrl = DirectWsUrl(_directUrl);
             _isDirect = true;
             return;
@@ -286,15 +318,9 @@ public sealed class AgentConnectionService : IAsyncDisposable
         inputMsg.Clear();
         InputSent?.Invoke();
 
-        // Mode has to be (re)asserted *after* the INPUT, never before. The host only forwards
-        // a mode_change to the agent while a turn owns the connection (`active_io` in its
-        // ws_router); sent on an idle socket it is dropped on the floor. Sending it here — on
-        // the same socket, immediately behind the INPUT that spawns the agent — means the
-        // host's sequential read loop has an agent to hand it to, and the agent's
-        // `poll_mode_changes` (a before_iteration hook) picks it up at its first iteration
-        // boundary. This is also why a CONNECT-only mode is not enough for a session the host
-        // already knows: its session merge would have thrown ours away.
-        if (mode is not null) await SendModeChangeAsync(mode, null, ct).ConfigureAwait(false);
+        // The mode is carried on the CONNECT (see InitialMode) rather than re-asserted with a
+        // separate mode_change frame behind the INPUT: that follow-up frame interfered with
+        // agent connections, so it is no longer sent.
 
         return AwaitInputAsync(inputTcs, ct);
     }

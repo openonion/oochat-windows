@@ -18,7 +18,7 @@
     <Grid x:Name="RootGrid" AutomationProperties.AutomationId="MainWindow"
           Background="{ThemeResource AppBackgroundBrush}" SizeChanged="RootGrid_SizeChanged">
         <Grid.Resources>
-            <Style x:Key="ShellMenuButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+            <Style x:Key="ShellMenuButtonStyle" TargetType="Button" BasedOn="{StaticResource PaletteButtonStyle}">
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="BorderThickness" Value="0" />
                 <Setter Property="MinHeight" Value="32" />
@@ -260,8 +260,8 @@
             </StackPanel>
 
             <Grid x:Name="TitleBarDragRegion"
-                  Grid.Column="1"
-                  Background="Transparent" />
+                Grid.Column="1"
+                Background="Transparent" />
         </Grid>
 
         <Grid x:Name="MainContentArea"
@@ -327,8 +327,13 @@
                     CornerRadius="12,0,0,0"
                     BorderThickness="1,1,0,0"
                     BorderBrush="{ThemeResource BorderDefaultBrush}">
+                <!-- Empty ContentTransitions: page changes swap instantly. -->
                 <Frame x:Name="ContentFrame"
-                       Background="{ThemeResource AppBackgroundBrush}" />
+                       Background="{ThemeResource AppBackgroundBrush}">
+                    <Frame.ContentTransitions>
+                        <TransitionCollection />
+                    </Frame.ContentTransitions>
+                </Frame>
             </Border>
         </Grid>
 

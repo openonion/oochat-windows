@@ -39,7 +39,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                <TextBlock x:Uid="ShortcutsDialogTitle" AutomationProperties.HeadingLevel="Level1" Text="Keyboard shortcuts" Style="{StaticResource TitleTextBlockStyle}"
+                <TextBlock x:Uid="ShortcutsDialogTitle" AutomationProperties.HeadingLevel="Level1" Text="Keyboard shortcuts" Style="{StaticResource ProductTitleTextStyle}"
                                Foreground="{ThemeResource TextPrimaryBrush}" VerticalAlignment="Center" />
                     <Button x:Uid="KeyboardShortcutsClose" Grid.Column="1" TabIndex="1" Style="{StaticResource ShortcutsCloseButtonStyle}" Click="CloseButton_Click"
                             AutomationProperties.AutomationId="KeyboardShortcutsCloseButton"
@@ -76,12 +76,12 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="models:KeyboardShortcutGroup">
                                     <StackPanel Margin="0,8,0,4">
-                                        <TextBlock Text="{x:Bind Title}" Style="{StaticResource BodyStrongTextBlockStyle}"
+                                        <TextBlock Text="{x:Bind Title}" Style="{StaticResource ProductBodyStrongTextStyle}"
                                                    Foreground="{ThemeResource TextPrimaryBrush}" Margin="0,6,0,4" />
                                         <ItemsControl ItemsSource="{x:Bind Shortcuts}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="models:KeyboardShortcutItem">
-                                                    <Grid MinHeight="36" Padding="2,5" ColumnSpacing="16">
+                                                    <Grid MinHeight="36" Padding="2,5" ColumnSpacing="16" >
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="*" />
                                                             <ColumnDefinition Width="Auto" />
@@ -117,7 +117,7 @@
                                                                                             Background="{ThemeResource SurfaceElevatedBrush}"
                                                                                             BorderBrush="{ThemeResource BorderStrongBrush}"
                                                                                             BorderThickness="1" CornerRadius="6"
-                                                                                            Padding="8,2" MinWidth="27" MinHeight="27">
+                                                                                            Padding="6,2" MinWidth="32" MinHeight="27">
                                                                                         <TextBlock Text="{x:Bind Text}" FontSize="{StaticResource ProductCaptionFontSize}"
                                                                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                                                                                    Foreground="{ThemeResource TextSecondaryBrush}" />
@@ -144,7 +144,7 @@
                         <!-- Empty state -->
                         <StackPanel Visibility="{x:Bind Vm.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVis}}"
                                     HorizontalAlignment="Center" Margin="0,52" Spacing="6">
-                        <TextBlock x:Uid="ShortcutsDialogEmpty" Text="No shortcuts found" Style="{StaticResource BodyStrongTextBlockStyle}"
+                        <TextBlock x:Uid="ShortcutsDialogEmpty" Text="No shortcuts found" Style="{StaticResource ProductBodyStrongTextStyle}"
                                        HorizontalAlignment="Center" Foreground="{ThemeResource TextPrimaryBrush}" />
                         <TextBlock x:Uid="ShortcutsDialogEmptyHint" Text="Try a different search term." HorizontalAlignment="Center"
                                        Foreground="{ThemeResource TextSecondaryBrush}" />

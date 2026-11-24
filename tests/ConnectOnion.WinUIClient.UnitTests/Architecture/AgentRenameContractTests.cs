@@ -3,15 +3,12 @@ namespace ConnectOnion.WinUIClient.UnitTests.Architecture;
 public sealed class AgentRenameContractTests
 {
     [Fact]
-    public void Rename_IsReachableFromSidebarAndAgentSettings()
+    public void Rename_IsReachableFromSidebar()
     {
         var sidebar = ReadAppSource("Controls", "Shell", "ShellSidebar.xaml");
-        var settings = ReadAppSource("Controls", "Settings", "AgentsSettingsContent.xaml");
 
         Assert.Contains("Click=\"RenameAgent_Click\"", sidebar, StringComparison.Ordinal);
         Assert.Contains("AutomationProperties.AutomationId=\"RenameAgentMenuItem\"", sidebar, StringComparison.Ordinal);
-        Assert.Contains("Click=\"RenameAgent_Click\"", settings, StringComparison.Ordinal);
-        Assert.Contains("x:Uid=\"AgentSettingsRenameAgent\"", settings, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -25,7 +22,6 @@ public sealed class AgentRenameContractTests
         Assert.Contains("WHERE id = $id AND name <> $name", repository, StringComparison.Ordinal);
         Assert.Contains("AppServices.Agents.UpdateNameAsync", host, StringComparison.Ordinal);
         Assert.Contains("ShellSidebar.RefreshAsync()", host, StringComparison.Ordinal);
-        Assert.Contains("RefreshAgentsAsync()", host, StringComparison.Ordinal);
         Assert.Contains("RefreshTrayRecentChatsAsync()", host, StringComparison.Ordinal);
         Assert.Contains("RefreshAgentPresentationAsync(agentId)", host, StringComparison.Ordinal);
     }

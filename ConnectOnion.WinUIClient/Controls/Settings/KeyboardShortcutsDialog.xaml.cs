@@ -51,6 +51,7 @@ public sealed partial class KeyboardShortcutsDialog : UserControl
 
         // Fresh view every open: clear the previous query and scroll back to the top.
         SearchBox.Text = string.Empty;
+
         Vm.Reset();
         ContentScroller.ChangeView(null, 0, null, disableAnimation: true);
 
