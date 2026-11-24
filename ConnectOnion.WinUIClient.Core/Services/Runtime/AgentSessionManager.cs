@@ -40,6 +40,7 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
     private readonly NotificationCoordinator? _notifications;
     private readonly HttpClient _http;
     private readonly ConversationRepository _conversations;
+    private readonly ProviderWorkRoomRepository? _workRooms;
     private readonly UsageRepository _usage;
     private readonly AgentConnectionRegistry _connections;
     private readonly ConversationRunRegistry _runs;
@@ -73,6 +74,7 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
     // each turn would add another copy of every handler and the UI would show one "Reconnecting"
     // row per turn the conversation had ever run.
     private readonly ConcurrentDictionary<string, byte> _wiredConnections = new();
+    private readonly ConcurrentDictionary<string, AgentConnectionService> _wiredWorkRoomConnections = new();
 
     /// <summary>Raised when an authenticated Host sends a new dashboard for an agent.</summary>
     public event Action<string, DashboardSnapshot>? DashboardSnapshotReceived;
@@ -112,13 +114,15 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
         UsageRepository? usage = null,
         ILogger<AgentSessionManager>? logger = null,
         NotificationCoordinator? notifications = null,
-        Func<int>? reconnectDelaySeconds = null)
+        Func<int>? reconnectDelaySeconds = null,
+        ProviderWorkRoomRepository? workRooms = null)
     {
         _http = http;
         _conversations = conversations;
         _usage = usage ?? new UsageRepository();
         _logger = logger ?? NullLogger<AgentSessionManager>.Instance;
         _notifications = notifications;
+        _workRooms = workRooms;
         _connections = new AgentConnectionRegistry(http, reconnectDelaySeconds: reconnectDelaySeconds);
         _runs = new ConversationRunRegistry(this, onError: ex =>
         {
@@ -129,6 +133,37 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
     /// <summary>The app-owned sockets, exposed so the view model can answer interactive turns
     /// and trigger explicit reconnects on the same connection the run uses.</summary>
     public AgentConnectionRegistry Connections => _connections;
+
+    // connects workroom to the reused parents connection sonthe workroom can recieve live provider events
+    public async Task ConnectWorkRoomAsync(
+        AgentConfig agent, string parentConversationId, string? remoteSessionId = null)
+    {
+        ArgumentNullException.ThrowIfNull(agent);
+        _agentsById[agent.Id] = agent;
+
+        var connection = _connections.GetOrCreate(parentConversationId, agent);
+
+        AttachConnectionHandlers(parentConversationId, agent, connection);
+        await connection.ConnectAsync(remoteSessionId ?? parentConversationId).ConfigureAwait(false);
+    }
+
+    // connects or resumes the parent session, then sends the provider request
+    public async Task SendWorkRoomRequestAsync(
+        AgentConfig agent,
+        ProviderWorkRoom workRoom,
+        string? remoteSessionId,
+        string requestType,
+        IReadOnlyList<KeyValuePair<string, object?>> fields,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(agent);
+        ArgumentNullException.ThrowIfNull(workRoom);
+        _agentsById[agent.Id] = agent;
+        var connection = _connections.GetOrCreate(workRoom.ParentConversationId, agent);
+        AttachConnectionHandlers(workRoom.ParentConversationId, agent, connection);
+        await connection.ConnectAsync(remoteSessionId ?? workRoom.ParentConversationId, ct).ConfigureAwait(false);
+        await connection.SendProviderRequestAsync(requestType, fields, ct).ConfigureAwait(false);
+    }
 
     /// <summary>Records the result the user chose for an interactive turn (ask_user / approval /
     /// plan_review) so the app-level persist can stamp it onto the card it re-projects from the
@@ -475,8 +510,19 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
     private void AttachConnectionHandlers(
         string conversationId, AgentConfig agent, AgentConnectionService connection)
     {
+        var workRooms = _workRooms;
         lock (_connectionHandlerSync)
         {
+            if (workRooms is not null && (!_wiredWorkRoomConnections.TryGetValue(conversationId, out var workRoomConnection) || !ReferenceEquals(workRoomConnection, connection)))
+            {
+                _wiredWorkRoomConnections[conversationId] = connection;
+                connection.StreamEvent += streamEvent =>
+                {
+                    if (ProviderWorkRoom.IsWorkRoomEvent(streamEvent.Type))
+                        _ = PersistProviderWorkRoomEventAsync(workRooms, conversationId, streamEvent);
+                };
+            }
+
             if (!_wiredDashboardConnections.TryGetValue(conversationId, out var dashboardConnection)
                 || !ReferenceEquals(dashboardConnection, connection))
             {
@@ -521,6 +567,20 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
             })));
 
         connection.SessionDiverged += state => _ = OnSessionDivergedAsync(conversationId, agent, state);
+    }
+
+    // saves and logs each provider event
+    private async Task PersistProviderWorkRoomEventAsync(
+        ProviderWorkRoomRepository workRooms, string conversationId, AgentStreamEvent streamEvent)
+    {
+        try
+        {
+            await workRooms.ApplyEventAsync(conversationId, streamEvent).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            LogRunFailure(_logger, ex);
+        }
     }
 
     /// <summary>
@@ -750,6 +810,7 @@ public sealed class AgentSessionManager : IAgentSessionManager, IRunPersistence
         // deleted conversation must not leave its last reply sitting in one of them.
         _runs.Forget(conversationId);
         _wiredConnections.TryRemove(conversationId, out _);
+        _wiredWorkRoomConnections.TryRemove(conversationId, out _);
         _wiredDashboardConnections.TryRemove(conversationId, out _);
         await _connections.RemoveAsync(conversationId).ConfigureAwait(false);
     }

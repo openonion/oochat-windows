@@ -75,6 +75,7 @@ public sealed class AgentConnectionService : IAsyncDisposable
     /// This is what lets a user answer an ask_user during an outage — the answer waits for the
     /// socket rather than vanishing into a failed send.</summary>
     private readonly ConcurrentQueue<Dictionary<string, object?>> _outbound = new();
+    private const int MaxSessionSyncTraceEvents = 512;
 
     public string? SessionId { get; private set; }
 
@@ -421,6 +422,45 @@ public sealed class AgentConnectionService : IAsyncDisposable
     {
         if (!IsConnected) throw new InvalidOperationException("Cannot stop: the agent connection is not open.");
         return SendJsonAsync(new Dictionary<string, object?> { ["type"] = "INTERRUPT" }, ct);
+    }
+
+    // checks for a valid connection and workroom request before signing and sending a workroom request to the provider
+    public Task SendProviderRequestAsync(string requestType, IReadOnlyList<KeyValuePair<string, object?>> fields, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(fields);
+
+        if (!IsConnected)
+            throw new InvalidOperationException("The agent is not connected. Reconnect to the agent before making a workroom request.");
+
+        if (requestType is not ("PROVIDER_INPUT" or "PROVIDER_INTERRUPT"
+            or "PROVIDER_PERMISSION_CHANGE" or "PROVIDER_APPROVAL_RESPONSE"))
+            throw new ArgumentOutOfRangeException(nameof(requestType), "Unsupported provider workroom request.");
+
+        var payload = new List<KeyValuePair<string, object?>>(fields.Count + 2);
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var field in fields)
+        {
+            if (field.Key is "timestamp" or "to" || !keys.Add(field.Key))
+                throw new ArgumentException("Workroom request contains a reserved or duplicate key.", nameof(fields));
+            payload.Add(field);
+        }
+
+        payload.Add(new("timestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds()));
+        payload.Add(new("to", _address));
+
+        var envelope = _identity.SignPayload(payload);
+        var message = new Dictionary<string, object?>
+        {
+            ["type"] = requestType,
+            ["payload"] = envelope.Payload,
+            ["from"] = envelope.From,
+            ["signature"] = envelope.Signature,
+            ["timestamp"] = envelope.Timestamp,
+        };
+
+        if (!_isDirect) message["to"] = _address;
+        return SendJsonAsync(message, ct);
     }
 
     /// <summary>
@@ -843,6 +883,20 @@ public sealed class AgentConnectionService : IAsyncDisposable
             case "compact":
             case "tool_blocked":
             case "files_received":
+
+            // workroom states provided in https://github.com/openonion/connectonion/issues/1109
+            case "provider_session":
+            case "provider_invocation":
+            case "provider_activity":
+            case "provider_approval":
+            case "provider_artifact":
+            case "provider_continuation":
+            case "provider_interrupt":
+            case "provider_error":
+            case "provider_message":
+            case "provider_phase":
+            case "PROVIDER_INPUT_ACK":
+            case "PROVIDER_PERMISSION_ACK":
             // Informational only — DiffWriter sends it and moves straight on to a separate
             // ask_user carrying the actual approve/reject options. It renders as a read-only
             // diff card; answering *this* frame would send a response nothing is waiting on and
@@ -850,11 +904,18 @@ public sealed class AgentConnectionService : IAsyncDisposable
             case "diff_preview":
             case "session_sync":
                 {
+                    if (msg.Type == "session_sync")
+                        PublishSessionSyncWorkRoomEvents(msg.Root);
+
                     var eventId = msg.GetString("id");
+
                     if (!string.IsNullOrEmpty(eventId))
                         LastProcessedEventId = eventId;
+
+                    var eventType = msg.Type.ToLowerInvariant();
+
                     StreamEvent?.Invoke(new AgentStreamEvent(
-                        msg.Type,
+                        eventType,
                         DescribeEvent(msg),
                         eventId,
                         BufferedEventJson(msg),
@@ -970,6 +1031,54 @@ public sealed class AgentConnectionService : IAsyncDisposable
 
         return WireJson.Serialize(compact);
     }
+
+    // tries to find workroom events in a given frame and forwards the trace to the function below
+    private void PublishSessionSyncWorkRoomEvents(JsonElement frame)
+    {
+        if (frame.ValueKind != JsonValueKind.Object) return;
+
+        if (frame.TryGetProperty("session", out var session) && session.ValueKind == JsonValueKind.Object && session.TryGetProperty("trace", out var sessionTrace))
+            PublishSessionSyncTraceArray(sessionTrace);
+
+        if (frame.TryGetProperty("trace", out var topLevelTrace))
+            PublishSessionSyncTraceArray(topLevelTrace);
+    }
+
+    // given a trace, validate and publish workroom events in it
+    private void PublishSessionSyncTraceArray(JsonElement trace)
+    {
+        if (trace.ValueKind != JsonValueKind.Array || trace.GetArrayLength() == 0) return;
+
+        var firstIndex = Math.Max(0, trace.GetArrayLength() - MaxSessionSyncTraceEvents);
+
+        for (var index = firstIndex; index < trace.GetArrayLength(); index++)
+        {
+            var item = trace[index];
+            if (item.ValueKind != JsonValueKind.Object || item.GetRawText().Length > 64 * 1024
+                || !item.TryGetProperty("type", out var typeValue)
+                || typeValue.ValueKind != JsonValueKind.String) continue;
+
+            var type = typeValue.GetString();
+            if (type is null || !IsProviderWorkRoomEventType(type) || type != "provider_message" && (!item.TryGetProperty("workroomId", out var workroomId) || workroomId.ValueKind != JsonValueKind.String)) continue;
+
+            var rawJson = item.GetRawText();
+            string? eventId = null;
+            if (item.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String)
+                eventId = idValue.GetString();
+
+            StreamEvent?.Invoke(new AgentStreamEvent(type, type, eventId, rawJson, EventTimestamp(item))
+            {
+                IsSessionSyncReplay = true,
+            });
+        }
+    }
+
+    // checks if given string is a valid workroom event
+    private static bool IsProviderWorkRoomEventType(string type) => type is
+        "provider_session" or "provider_invocation" or "provider_activity" or
+        "provider_approval" or "provider_artifact" or "provider_continuation" or
+        "provider_input_ack" or "provider_permission_ack" or "provider_interrupt" or "provider_error" or "provider_message" or
+        "provider_phase";
 
     private static string CompactToolResult(WireMessage msg)
     {

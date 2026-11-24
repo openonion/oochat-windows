@@ -793,6 +793,42 @@
                                            HorizontalAlignment="Stretch" />
             </DataTemplate>
 
+            <!-- the card that opens when the agent successfully invokes a workroom and displays the button to open it -->
+            <DataTemplate x:Key="ChatWorkRoomTemplate" x:DataType="models:ChatMessage">
+                <Border MaxWidth="{StaticResource ChatColumnWidth}"
+                        Margin="0,12,0,4"
+                        Padding="16"
+                        CornerRadius="12"
+                        Background="{ThemeResource SurfaceSecondaryBrush}"
+                        BorderBrush="{ThemeResource BorderDefaultBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="10">
+                        <StackPanel Spacing="3">
+                            <TextBlock Text="{x:Bind EventTitle, Mode=OneWay}"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Text="{x:Bind EventMeta, Mode=OneWay}"
+                                       FontSize="12"
+                                       Foreground="{ThemeResource TextSecondaryBrush}"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <TextBlock Text="{x:Bind EventDetail, Mode=OneWay}"
+                                   FontSize="13"
+                                   TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextSecondaryBrush}"
+                                   Visibility="{x:Bind HasEventDetail, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="Open Work Room"
+                                HorizontalAlignment="Right"
+                                MinHeight="40"
+                                Padding="14,0"
+                                Tag="{x:Bind EventKey}"
+                                Click="WorkRoomOpen_Click"
+                                AutomationProperties.Name="Open Workroom" />
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
+
             <!-- Ask-user card. Header (chevron | icon | title | status badge) over the question,
                  then — while it waits — the options, the custom answer box and a quiet way out;
                  once answered it folds to the header and can be reopened to see what was asked.
@@ -844,6 +880,7 @@
                                                 Usage="{StaticResource ChatEmptyTemplate}"
                                                 Activity="{StaticResource ChatActivityTemplate}"
                                                 ToolActivity="{StaticResource ChatToolActivityTemplate}"
+                                                WorkRoom="{StaticResource ChatWorkRoomTemplate}"
                                                 AskUser="{StaticResource ChatAskUserTemplate}"
                                                 Approval="{StaticResource ChatApprovalTemplate}"
                                                 PlanReview="{StaticResource ChatPlanReviewTemplate}"

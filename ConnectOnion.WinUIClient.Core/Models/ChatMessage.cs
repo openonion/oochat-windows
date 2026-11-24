@@ -151,6 +151,7 @@ public sealed partial class ChatMessage : Common.ObservableObject
     [NotifyPropertyChangedFor(nameof(IsAskUserEvent))]
     [NotifyPropertyChangedFor(nameof(IsApprovalEvent))]
     [NotifyPropertyChangedFor(nameof(IsPlanReviewEvent))]
+    [NotifyPropertyChangedFor(nameof(IsWorkRoomEvent))]
     [NotifyPropertyChangedFor(nameof(IsInteractiveEvent))]
     [JsonPropertyName("eventKind")]
     public partial string EventKind { get; set; }
@@ -617,6 +618,9 @@ public sealed partial class ChatMessage : Common.ObservableObject
     /// <summary>A <c>plan_review</c> turn: plan content + approve/request-changes buttons.</summary>
     [JsonIgnore]
     public bool IsPlanReviewEvent => EventKind == "plan_review";
+
+    [JsonIgnore]
+    public bool IsWorkRoomEvent => EventKind == "workroom";
 
     /// <summary>A read-only proposed file change. Not an interactive event: DiffWriter sends
     /// diff_preview for display only and asks for approval through a separate ask_user, so this

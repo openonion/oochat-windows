@@ -24,6 +24,7 @@ public sealed partial class ChatMessageTemplateSelector : DataTemplateSelector
     public DataTemplate? Usage { get; set; }
     public DataTemplate? Activity { get; set; }
     public DataTemplate? ToolActivity { get; set; }
+    public DataTemplate? WorkRoom { get; set; }
     public DataTemplate? AskUser { get; set; }
     public DataTemplate? Approval { get; set; }
     public DataTemplate? PlanReview { get; set; }
@@ -46,6 +47,7 @@ public sealed partial class ChatMessageTemplateSelector : DataTemplateSelector
         // specific discriminator and must win; checking IsAgent first silently turns restored
         // tool timelines and interactive cards into generic assistant bubbles.
         if (message.IsTurnUsageEvent) return Usage ?? Empty;
+        if (message.IsWorkRoomEvent) return WorkRoom;
         if (message.IsActivityEvent) return Activity;
         if (message.IsToolActivityEvent) return ToolActivity;
         // A file-change ask_user is rendered directly under its diff so the proposal and its

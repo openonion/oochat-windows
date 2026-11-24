@@ -39,6 +39,20 @@ public sealed partial class ChatTurnProjection
                 : null;
         switch (e.Type)
         {
+            // workroom states provided in https://github.com/openonion/connectonion/issues/1109
+            case "provider_session":
+            case "provider_invocation":
+            case "provider_activity":
+            case "provider_approval":
+            case "provider_artifact":
+            case "provider_continuation":
+            case "provider_interrupt":
+            case "provider_error":
+            case "provider_message":
+            case "provider_phase":
+                ApplyWorkRoomCard(e, root);
+                break;
+
             // Local-only lifecycle markers. They intentionally render no separate bubble; the
             // successful marker is attached to the final OUTPUT message instead.
             case "interrupt_requested":
@@ -554,5 +568,102 @@ public sealed partial class ChatTurnProjection
                     break;
                 }
         }
+    }
+
+    // creates the transcript card for each room and populates its title, summary, provider and status live
+    private void ApplyWorkRoomCard(AgentStreamEvent e, JsonElement root)
+    {
+        var id = ProviderWorkRoom.GetExplicitWorkRoomId(root);
+        if (string.IsNullOrWhiteSpace(id)) return;
+
+        var provider = ReadString(root, "provider") ?? "Coding agent";
+        var providerLabel = ProviderWorkRoom.ProviderLabel(provider);
+        var existing = _target.Messages.FirstOrDefault(message =>
+            message.IsWorkRoomEvent && string.Equals(message.EventKey, id, StringComparison.Ordinal));
+
+        if (existing is null && e.IsSessionSyncReplay) return;
+
+        var card = existing ?? new ChatMessage
+        {
+            Id = NextId(),
+            Role = ChatRole.Event,
+            EventKind = "workroom",
+            EventKey = id,
+        };
+        var status = StatusFromMeta(existing?.EventMeta) ?? "starting";
+
+        if (e.Type == "provider_session")
+        {
+            card.EventEyebrow = providerLabel;
+            card.EventTitle = "Coding Workroom";
+        }
+        else if (e.Type == "provider_invocation")
+        {
+            card.EventEyebrow = providerLabel;
+            if (ReadString(root, "title", "taskTitle", "task_title") is { } title)
+                card.EventTitle = Limit(title, 200);
+        }
+        if (e.Type is "provider_session" or "provider_invocation" or "provider_phase"
+            or "provider_interrupt")
+        {
+            var reportedStatus = ReadString(root, "status", "phase");
+            if (e.Type == "provider_phase") reportedStatus = ReadString(root, "phase", "status");
+            if (reportedStatus is not null) status = ProviderWorkRoom.NormalizeStatus(reportedStatus);
+        }
+
+        var summary = ReadString(root, "resultSummary", "result_summary")
+            ?? ReadString(root, "currentSummary", "current_summary")
+            ?? ReadString(root, "summary");
+
+        if (summary is not null) card.EventDetail = Limit(summary, 1200);
+
+        if (e.Type == "provider_error")
+        {
+            card.EventDetail = Limit(ReadString(root, "summary", "safeSummary", "safe_summary") ?? "Workroom failed.", 1200);
+            card.EventResult = null;
+            status = ProviderWorkRoom.NormalizeStatus(ReadString(root, "status") ?? "failed");
+        }
+        else if (e.Type == "provider_approval")
+        {
+            var resolved = ReadString(root, "resolution");
+            if (resolved is null) status = "awaiting_approval";
+            else if (status == "awaiting_approval")
+                status = ProviderWorkRoom.NormalizeStatus(ReadString(root, "status") ?? "running");
+        }
+
+        status = ProviderWorkRoom.NormalizeStatus(status);
+        card.EventMeta = $"{providerLabel} · {ProviderWorkRoom.StatusLabel(status)}";
+        card.Status = status switch
+        {
+            "completed" => EventStatus.Done,
+            "failed" or "cancelled" => EventStatus.Error,
+            _ => EventStatus.Running,
+        };
+
+        if (existing is null) Add(card);
+    }
+
+    // checks the field names in order and returns the first one with a JSON value that is a string
+    private static string? ReadString(JsonElement root, params string[] names)
+    {
+        foreach (var name in names)
+            if (root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String)
+                return value.GetString();
+        return null;
+    }
+
+    // ensures transcript card stays within size limit
+    private static string Limit(string value, int maxLength)
+        => value[..Math.Min(value.Length, maxLength)];
+
+    // extracs final status from saved card metadata
+    private static string? StatusFromMeta(string? meta)
+    {
+        if (string.IsNullOrWhiteSpace(meta)) return null;
+
+        var separator = meta.LastIndexOf(" · ", StringComparison.Ordinal);
+        if (separator < 0) return null;
+
+        return ProviderWorkRoom.StatusFromLabel(meta[(separator + 3)..]);
     }
 }

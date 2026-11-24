@@ -82,4 +82,7 @@ public sealed record AgentStreamEvent(
     string Description,
     string? EventId,
     string RawJson = "{}",
-    double? Timestamp = null);
+    double? Timestamp = null)
+{
+    public bool IsSessionSyncReplay { get; init; }
+}

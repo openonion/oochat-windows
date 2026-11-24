@@ -74,6 +74,7 @@ public static class ServiceRegistration
         services.AddSingleton<SidebarStateRepository>();
         services.AddSingleton<PreferencesRepository>();
         services.AddSingleton<ConversationRepository>();
+        services.AddSingleton<ProviderWorkRoomRepository>();
         services.AddSingleton<UsageRepository>();
         services.AddSingleton<StartupSnapshotRepository>();
         services.AddSingleton<WindowPlacementStore>();
@@ -99,7 +100,8 @@ public static class ServiceRegistration
             logger: sp.GetRequiredService<ILogger<AgentSessionManager>>(),
             notifications: sp.GetRequiredService<NotificationCoordinator>(),
             reconnectDelaySeconds: () =>
-                sp.GetRequiredService<StartupStateService>().Preferences.ReconnectDelaySeconds));
+                sp.GetRequiredService<StartupStateService>().Preferences.ReconnectDelaySeconds,
+            workRooms: sp.GetRequiredService<ProviderWorkRoomRepository>()));
 
         // ---- Notification subsystem ----
         services.AddSingleton<WindowPresenceService>();
@@ -128,6 +130,7 @@ public static class ServiceRegistration
 
         // ---- View models (transient: one per page/dialog, resolved in each view's ctor) ----
         services.AddTransient<ChatViewModel>();
+        services.AddTransient<WorkRoomViewModel>();
         services.AddTransient<AddAgentViewModel>();
         services.AddTransient<AgentDetailViewModel>();
         services.AddTransient<SettingsViewModel>();
