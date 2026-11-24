@@ -142,6 +142,22 @@
         </Border>
 
         <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch" Background="{ThemeResource GreenBackgroundBrush}">
+            <StackPanel Spacing="14">
+                <TextBlock x:Uid="IdentitySharing" Text="Identity Sharing" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock x:Uid="IdentitySharingDescription" Text="Manage devices connected to this identity" TextWrapping="Wrap" MinWidth="0"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextSecondaryBrush}" />
+
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button x:Uid="IdentityListDevicesAction" x:Name="ListDevicesButton" Content="List Devices"
+                            Click="ListDevices_Click"
+                            AutomationProperties.AutomationId="ListDevicesButton"
+                            AutomationProperties.Name="List devices" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch" Background="{ThemeResource GreenBackgroundBrush}">
             <StackPanel Spacing="12">
                 <TextBlock x:Uid="IdentityBackup" Text="Backup and recovery" Style="{StaticResource ProductBodyStrongTextStyle}" />
                 <TextBlock x:Name="BackupDescriptionText" TextWrapping="Wrap" MinWidth="0"
@@ -186,5 +202,58 @@
                          IsClosable="True" />
             </StackPanel>
         </Border>
+        <StackPanel x:Name="DevicesPanel" MinWidth="0" HorizontalAlignment="Stretch" Spacing="16" Visibility="Collapsed">
+            <Button x:Uid="IdentityDevicesBack" x:Name="DevicesBackButton" Click="DevicesBack_Click"
+                HorizontalAlignment="Left" Padding="10,6"
+                AutomationProperties.AutomationId="DevicesBackButton"
+                AutomationProperties.Name="Back to Identity">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ic:FluentIcon Icon="ArrowLeft" IconVariant="Regular" IconSize="Size16" />
+                    <TextBlock x:Uid="IdentityDevicesBackLabel" Text="Identity" />
+                </StackPanel>
+            </Button>
+
+            <StackPanel Spacing="4">
+                <TextBlock x:Uid="IdentityLoggedInDevicesTitle" Text="Logged-in Devices"
+                       Style="{StaticResource SubtitleTextBlockStyle}"
+                       AutomationProperties.HeadingLevel="Level2" />
+                <TextBlock x:Uid="IdentityLoggedInDevicesDescription" Text="Devices connected to your account." TextWrapping="Wrap" MinWidth="0"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextSecondaryBrush}" />
+            </StackPanel>
+
+            <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch" Background="{ThemeResource GreenBackgroundBrush}">
+                <StackPanel Spacing="12">
+                    <TextBlock x:Uid="IdentityCurrentDevice" Text="Current Device"
+                           Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <Grid MinWidth="0" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8"
+                            VerticalAlignment="Center"
+                            Background="{ThemeResource SettingsContentBrush}"
+                            BorderBrush="{ThemeResource DividerBrush}" BorderThickness="1">
+                            <ic:FluentIcon Icon="Desktop" IconVariant="Regular" IconSize="Size16"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{ThemeResource TextSecondaryBrush}" />
+                        </Border>
+
+                        <StackPanel Grid.Column="1" MinWidth="0" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock x:Name="DeviceNameText"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                   TextTrimming="CharacterEllipsis" IsTextSelectionEnabled="True" />
+                            <TextBlock x:Name="DeviceOsText"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                                   Foreground="{ThemeResource TextSecondaryBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
     </StackPanel>
 </UserControl>
