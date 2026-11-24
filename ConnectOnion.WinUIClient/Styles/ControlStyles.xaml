@@ -24,6 +24,8 @@
          fields want the opposite, so ChatComposer opts out by naming DefaultTextBoxStyle
          explicitly; a wrapped message must grow downwards from the top, not from the middle. -->
     <Style TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource ProductFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource ProductBodyFontSize}" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
 
@@ -44,11 +46,117 @@
         <Setter Property="Padding" Value="20" />
     </Style>
 
+    <Style x:Key="PaletteButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource ProductFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource ProductBodyFontSize}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <ContentPresenter x:Name="ContentPresenter"
+                                      Background="{TemplateBinding Background}"
+                                      Foreground="{TemplateBinding Foreground}"
+                                      BorderBrush="{TemplateBinding BorderBrush}"
+                                      BorderThickness="{TemplateBinding BorderThickness}"
+                                      CornerRadius="{TemplateBinding CornerRadius}"
+                                      Padding="{TemplateBinding Padding}"
+                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                      Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      ContentTransitions="{TemplateBinding ContentTransitions}"
+                                      AutomationProperties.AccessibilityView="Raw">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="ContentPresenter.Background" Value="{ThemeResource ButtonBackgroundPointerOver}" />
+                                        <Setter Target="ContentPresenter.BorderBrush" Value="{ThemeResource ButtonBorderBrushPointerOver}" />
+                                        <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource ButtonForegroundPointerOver}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="ContentPresenter.Background" Value="{ThemeResource ButtonBackgroundPressed}" />
+                                        <Setter Target="ContentPresenter.BorderBrush" Value="{ThemeResource ButtonBorderBrushPressed}" />
+                                        <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource ButtonForegroundPressed}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="ContentPresenter.Background" Value="{ThemeResource ButtonBackgroundDisabled}" />
+                                        <Setter Target="ContentPresenter.BorderBrush" Value="{ThemeResource ButtonBorderBrushDisabled}" />
+                                        <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource ButtonForegroundDisabled}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </ContentPresenter>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="PaletteAccentButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource ProductFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource ProductBodyFontSize}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <ContentPresenter x:Name="ContentPresenter"
+                                      Background="{TemplateBinding Background}"
+                                      Foreground="{TemplateBinding Foreground}"
+                                      BorderBrush="{TemplateBinding BorderBrush}"
+                                      BorderThickness="{TemplateBinding BorderThickness}"
+                                      CornerRadius="{TemplateBinding CornerRadius}"
+                                      Padding="{TemplateBinding Padding}"
+                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                      Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      ContentTransitions="{TemplateBinding ContentTransitions}"
+                                      AutomationProperties.AccessibilityView="Raw">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="ContentPresenter.Background" Value="{ThemeResource AccentButtonBackgroundPointerOver}" />
+                                        <Setter Target="ContentPresenter.BorderBrush" Value="{ThemeResource AccentButtonBorderBrushPointerOver}" />
+                                        <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource AccentButtonForegroundPointerOver}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="ContentPresenter.Background" Value="{ThemeResource AccentButtonBackgroundPressed}" />
+                                        <Setter Target="ContentPresenter.BorderBrush" Value="{ThemeResource AccentButtonBorderBrushPressed}" />
+                                        <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource AccentButtonForegroundPressed}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="ContentPresenter.Background" Value="{ThemeResource AccentButtonBackgroundDisabled}" />
+                                        <Setter Target="ContentPresenter.BorderBrush" Value="{ThemeResource AccentButtonBorderBrushDisabled}" />
+                                        <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource AccentButtonForegroundDisabled}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </ContentPresenter>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="Button" BasedOn="{StaticResource PaletteButtonStyle}" />
+
     <!-- Clickable "card" button: the card chrome IS the button, so hover/pressed
          feedback lands on the whole card with matching corner radius instead of
          the default Button template's square-cornered background leaking out
          behind an opaque inner Border. Used by the Home page's agent picker. -->
     <Style x:Key="CardButtonStyle" TargetType="Button">
+        <Setter Property="FontFamily" Value="{StaticResource ProductFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource ProductBodyFontSize}" />
         <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
         <Setter Property="BorderThickness" Value="1" />
@@ -103,7 +211,7 @@
     <!-- Transparent background button — no hover/pressed background painting.
          Used by disclosure headers, sidebar nav items, and any clickable row
          where hover feedback comes through foreground/text color instead. -->
-    <Style x:Key="TransparentButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+    <Style x:Key="TransparentButtonStyle" TargetType="Button" BasedOn="{StaticResource PaletteButtonStyle}">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -153,7 +261,7 @@
          and sidebar row buttons on TransparentButtonStyle so they retain one unified row hover. -->
     <Style x:Key="TextActionButtonStyle"
            TargetType="Button"
-           BasedOn="{StaticResource DefaultButtonStyle}">
+           BasedOn="{StaticResource PaletteButtonStyle}">
         <Setter Property="Background" Value="{ThemeResource SurfaceSecondaryBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource BorderSubtleBrush}" />
         <Setter Property="BorderThickness" Value="1" />
@@ -167,7 +275,7 @@
 
     <!-- Small icon-only button — compact, transparent, circular click target.
          Used for copy/dismiss/close/expand actions attached to a content row. -->
-    <Style x:Key="SmallIconButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+    <Style x:Key="SmallIconButtonStyle" TargetType="Button" BasedOn="{StaticResource PaletteButtonStyle}">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="CornerRadius" Value="6" />
@@ -183,6 +291,7 @@
     <!-- Section header ("Pinned Chats", "Agents"): one weight/size/color for both,
          aligned to the row content's left edge by the caller's Margin. -->
     <Style x:Key="SidebarSectionHeaderStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource ProductFontFamily}" />
         <Setter Property="FontSize" Value="{StaticResource ProductCaptionFontSize}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Foreground" Value="{ThemeResource TextTertiaryBrush}" />
@@ -196,6 +305,8 @@
          second, competing hover). 36×36, 8px radius, no border — a subtle neutral chip that
          sits on top of the row's own hover wash. -->
     <Style x:Key="SidebarActionButtonStyle" TargetType="Button">
+        <Setter Property="FontFamily" Value="{StaticResource ProductFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource ProductBodyFontSize}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="CornerRadius" Value="8" />
@@ -248,6 +359,8 @@
          RowStateToBackground row), so unlike the tree rows they own their feedback. Uses the
          sidebar's hover/pressed tokens so it reads identically to a hovered tree row. -->
     <Style x:Key="SidebarNavButtonStyle" TargetType="Button">
+        <Setter Property="FontFamily" Value="{StaticResource ProductFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource ProductBodyFontSize}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="CornerRadius" Value="8" />
@@ -274,12 +387,12 @@
                                 <VisualState x:Name="Normal" />
                                 <VisualState x:Name="PointerOver">
                                     <VisualState.Setters>
-                                        <Setter Target="RootGrid.Background" Value="{ThemeResource SidebarItemHoverBrush}" />
+                                        <Setter Target="RootGrid.Background" Value="{ThemeResource GreenBackgroundBrush}" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <VisualState.Setters>
-                                        <Setter Target="RootGrid.Background" Value="{ThemeResource SidebarItemPressedBrush}" />
+                                        <Setter Target="RootGrid.Background" Value="{ThemeResource GreenBackgroundBrush}" />
                                         <Setter Target="ContentPresenter.Opacity" Value="0.8" />
                                     </VisualState.Setters>
                                 </VisualState>

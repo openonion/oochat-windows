@@ -5,6 +5,11 @@ using ConnectOnion.WinUIClient.Common;
 using ConnectOnion.WinUIClient.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using QRCoder;
+using Microsoft.UI.Xaml.Media.Imaging;
+using Windows.Storage.Streams;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace ConnectOnion.WinUIClient.Controls;
 
@@ -118,5 +123,66 @@ public sealed partial class RecoveryPhraseDialog : ContentDialog
         CopyButtonText.Text = LocalizedStrings.Get(
             "RecoveryPhraseCopiedWithExpiry",
             "Copied · clears in 60 seconds");
+    }
+
+    private async void QR_Click(object sender, RoutedEventArgs e)
+    {
+        RecoveryContent.Visibility = Visibility.Collapsed;
+        QRCodeContent.Visibility = Visibility.Visible;
+        QRButton.IsEnabled = false;
+
+        try
+        {
+            await GenerateQRCode();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex.ToString());
+
+            QRCodeContent.Visibility = Visibility.Collapsed;
+            RecoveryContent.Visibility = Visibility.Visible;
+        }
+        finally
+        {
+            QRButton.IsEnabled = true;
+        }
+    }
+
+    private void QRBack_Click(object sender, RoutedEventArgs e)
+    {
+        QRCodeImage.Source = null;
+
+        QRCodeContent.Visibility = Visibility.Collapsed;
+        RecoveryContent.Visibility = Visibility.Visible;
+    }
+
+    private async Task GenerateQRCode()
+    {
+        using var generator = new QRCodeGenerator();
+        using var qrData = generator.CreateQrCode(_copyValue, QRCodeGenerator.ECCLevel.Q);
+        var qrCode = new PngByteQRCode(qrData);
+        byte[] qrBytes = qrCode.GetGraphic(10);
+
+        try
+        {
+            using var stream = new InMemoryRandomAccessStream();
+            using (var writer = new DataWriter(stream))
+            {
+                writer.WriteBytes(qrBytes);
+                await writer.StoreAsync();
+                writer.DetachStream();
+            }
+
+            stream.Seek(0);
+
+            var bitmap = new BitmapImage();
+            await bitmap.SetSourceAsync(stream);
+
+            QRCodeImage.Source = bitmap;
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(qrBytes);
+        }
     }
 }

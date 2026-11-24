@@ -1,10 +1,11 @@
-using System;
 using ConnectOnion.Protocol;
 using ConnectOnion.WinUIClient.Common;
 using ConnectOnion.WinUIClient.Data;
+using ConnectOnion.WinUIClient.Models;
 using ConnectOnion.WinUIClient.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using System;
 
 namespace ConnectOnion.WinUIClient.Controls;
 
@@ -33,6 +34,7 @@ public sealed partial class IdentitySettingsContent : UserControl, System.IDispo
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         RefreshIdentity();
+        RefreshDeviceInfo();
         await RefreshAccountAsync(forceAuthentication: false);
     }
 
@@ -70,6 +72,81 @@ public sealed partial class IdentitySettingsContent : UserControl, System.IDispo
                 "IdentityPrivateKeyDescription",
                 "This identity predates recovery phrases, so it is backed up as a raw private key. Keep a copy: it is the only thing that restores this address elsewhere.");
     }
+
+    /// <summary>
+    /// Fills the "Current Device" row in Identity Sharing. 
+    /// </summary>
+    private void RefreshDeviceInfo()
+    {
+        DeviceInfoProvider provider = new DeviceInfoProvider();
+        DeviceInfo device = provider.GetCurrent();
+
+        string formFactorKey = "DeviceFormFactor" + device.FormFactor.ToString();
+        string formFactorText = LocalizedStrings.Get(formFactorKey, device.FormFactor.ToString());
+
+        DeviceNameText.Text = device.DeviceName;
+        DeviceOsText.Text = device.OsName + " · " + formFactorText;
+    }
+
+
+    // Creates a sepereate pane insde the IdentitySettingsContent for listing devices.
+    public void ShowDevicesView()
+    {
+        SetDevicesViewVisible(true);
+        // Keyboard and screen-reader users would otherwise be left on a button that just vanished.
+        DevicesBackButton.Focus(FocusState.Programmatic);
+    }
+
+    public void ShowMainView()
+    {
+        SetDevicesViewVisible(false);
+        ListDevicesButton.Focus(FocusState.Programmatic);
+    }
+
+    private void SetDevicesViewVisible(bool showDevices)
+    {
+        Panel root = (Panel)Content;
+
+        foreach (UIElement child in root.Children)
+        {
+            if (child == DevicesPanel)
+            {
+                continue;
+            }
+
+            if (showDevices)
+            {
+                child.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                child.Visibility = Visibility.Visible;
+            }
+        }
+
+        if (showDevices)
+        {
+            DevicesPanel.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            DevicesPanel.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void DevicesBack_Click(object sender, RoutedEventArgs e)
+    {
+        ShowMainView();
+    }
+
+
+
+    private void ListDevices_Click(object sender, RoutedEventArgs e)
+    {
+        ShowDevicesView();
+    }
+
+
 
     /// <summary>
     /// Reveals the backup. Deliberately behind a button rather than shown on the page: this panel

@@ -150,7 +150,7 @@
                                 Spacing="6">
                         <TextBlock x:Uid="SessionSearchEmpty"
                                    Text="No chats found"
-                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                   Style="{StaticResource ProductBodyStrongTextStyle}"
                                    Foreground="{ThemeResource TextPrimaryBrush}"
                                    HorizontalAlignment="Center" />
                         <TextBlock x:Uid="SessionSearchEmptyHint"

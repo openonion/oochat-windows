@@ -83,28 +83,17 @@ public sealed partial class ToolActivityProjector
 
     public ToolActivityViewModel Activity { get; }
 
-    private readonly bool _isLiveView;
-
-    /// <param name="isLiveView">Whether a user is watching this card right now. Defaults to false
-    /// so the headless persistence pass and the legacy-row migration can construct a projector
-    /// without opting into interruption.</param>
+    /// <param name="isLiveView">Live and headless cards start collapsed (see <see cref="ApplyAutoExpansion"/>).</param>
     public ToolActivityProjector(ToolActivityViewModel activity, bool isLiveView = false)
     {
+        _ = isLiveView;
         Activity = activity;
-        _isLiveView = isLiveView;
     }
 
     /// <summary>
-    /// The card's auto-expansion rule: <b>open while the tools are running, folded once they are
-    /// done</b>. A turn in progress is when the timeline is worth watching; a finished one has a
-    /// header that already says what happened, and leaving it open pushes the agent's actual
-    /// reply down the page on every tool-using turn.
-    ///
-    /// Two states keep the card open past completion, and both are cases where the detail is the
-    /// whole point: something failed, or the turn is blocked waiting on a decision.
-    ///
-    /// Gated on <paramref name="_isLiveView"/> so the headless persistence pass writes the card
-    /// collapsed: reopening an old conversation should not replay every past run at full height.
+    /// The card's expansion rule: <b>collapsed unless the user opens it</b>. Tool calls never
+    /// open the card on their own. The header carries the running summary, a folded card shows the last
+    /// failure on its collapsed error line (<see cref="ToolActivityViewModel.ShowCollapsedError"/>).
     ///
     /// Two things outrank it. <see cref="ToolActivityViewModel.IsDetailed"/> is an explicit
     /// "always show me detail" setting. And
@@ -121,31 +110,7 @@ public sealed partial class ToolActivityProjector
         }
         if (Activity.HasUserExpansionOverride) return;
 
-        var failed = Activity.Status == ToolActivityStatus.Failed
-            || Activity.Steps.Any(step => step.Status == ToolStepStatus.Failed);
-        var awaitingUser = Activity.Status
-            is ToolActivityStatus.WaitingForConfirmation
-            or ToolActivityStatus.WaitingForPermission;
-        var running = Activity.Status == ToolActivityStatus.Running;
-
-        // Awaiting the user COLLAPSES, and this is the opposite of what it used to do.
-        //
-        // Expanding on approval looked right — "show them what the tool was about to do" — but the
-        // decision controls sit at the *bottom* of the card, below every step the turn has already
-        // taken. A turn that had run eight tools produced a card over a thousand pixels tall whose
-        // last few hundred pixels were the only actionable part, so the thing the agent was blocked
-        // on was pushed off the bottom of the viewport by its own history. Collapsing puts the
-        // header, the command, the risk line and the buttons together in about a third of that.
-        //
-        // Nothing needed to answer is lost: the header names the tool and carries the "Approval
-        // required" badge, the approval section carries the command and its risk, and the step
-        // count stays on the header (CollapsedStepCountHint). The timeline is context, one click
-        // away, and a user who opens it keeps it open — HasUserExpansionOverride is checked above.
-        //
-        // It also removes a layout jolt. The card used to grow by hundreds of pixels at the moment
-        // an approval arrived, shoving the transcript under anyone who was not pinned to the
-        // bottom; now it shrinks instead.
-        Activity.IsExpanded = _isLiveView && !awaitingUser && (running || failed);
+        Activity.IsExpanded = false;
     }
 
     /// <summary>Projects a <c>tool_call</c> frame into a new running step (or returns the

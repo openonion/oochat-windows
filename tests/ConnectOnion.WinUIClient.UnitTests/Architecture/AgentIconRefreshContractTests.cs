@@ -8,7 +8,7 @@ public sealed class AgentIconRefreshContractTests
         var source = ReadAppSource("Controls", "Shell", "ShellSidebar.Events.cs");
 
         Assert.Equal(
-            2,
+            3,
             CountOccurrences(source, "RefreshCurrentAgentSurface();"));
         Assert.Contains("_currentPageType == typeof(HomePage)", source, StringComparison.Ordinal);
         Assert.Contains("_currentPageType == typeof(AgentDetailPage)", source, StringComparison.Ordinal);

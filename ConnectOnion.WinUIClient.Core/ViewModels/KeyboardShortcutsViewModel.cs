@@ -17,7 +17,8 @@ namespace ConnectOnion.WinUIClient.ViewModels;
 /// </summary>
 public sealed partial class KeyboardShortcutsViewModel : Common.ObservableObject
 {
-    private readonly IReadOnlyList<KeyboardShortcutGroup> _allGroups;
+    private readonly KeyboardShortcutService? _shortcuts;
+    private IReadOnlyList<KeyboardShortcutGroup> _allGroups = Array.Empty<KeyboardShortcutGroup>();
 
     /// <summary>The groups (with their matching items) to render for the current search.</summary>
     public ObservableCollection<KeyboardShortcutGroup> Groups { get; } = new();
@@ -44,14 +45,24 @@ public sealed partial class KeyboardShortcutsViewModel : Common.ObservableObject
     /// than the factory default.</param>
     public KeyboardShortcutsViewModel(KeyboardShortcutService? shortcuts)
     {
-        _allGroups = shortcuts?.GetLiveGroups() ?? KeyboardShortcutCatalog.GetGroups();
+        _shortcuts = shortcuts;
+        LoadGroups();
         // Setting SearchText fires OnSearchTextChanged → ApplyFilter, which seeds Groups and HasResults.
         SearchText = "";
     }
 
+    private void LoadGroups()
+    {
+        _allGroups = _shortcuts?.GetLiveGroups() ?? KeyboardShortcutCatalog.GetGroups();
+    }
     /// <summary>Clears the search back to the full list. Called each time the dialog opens so a
     /// prior session's query never leaks into a fresh view.</summary>
-    public void Reset() => SearchText = "";
+    public void Reset()
+    {
+        LoadGroups();
+        SearchText = "";
+        ApplyFilter();
+    }
 
     private void ApplyFilter()
     {

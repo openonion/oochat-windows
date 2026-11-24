@@ -45,7 +45,7 @@ public sealed partial class ChatMessageTemplateSelector : DataTemplateSelector
         // Persisted event rows from older builds can carry Role=Agent. EventKind is the more
         // specific discriminator and must win; checking IsAgent first silently turns restored
         // tool timelines and interactive cards into generic assistant bubbles.
-        if (message.IsTurnUsageEvent) return Usage;
+        if (message.IsTurnUsageEvent) return Usage ?? Empty;
         if (message.IsActivityEvent) return Activity;
         if (message.IsToolActivityEvent) return ToolActivity;
         // A file-change ask_user is rendered directly under its diff so the proposal and its

@@ -64,6 +64,8 @@ public sealed partial class MainWindow
     private void RegisterViewMenuAccelerators()
     {
         RootGrid.KeyDown += ViewMenuShortcut_KeyDown;
+        RootGrid.AddHandler(UIElement.PointerWheelChangedEvent,
+            new PointerEventHandler(ViewMenuWheel_PointerWheelChanged), true);
         _zoomPopupIdleTimer.Tick += ZoomPopupIdleTimer_Tick;
     }
 
@@ -76,6 +78,8 @@ public sealed partial class MainWindow
         // TextScaleService is a singleton that outlives this window, and its Changed handler
         // re-lays out the visual tree. Left attached, an OS text-size change during teardown
         // would run UpdateZoomLayout against a tree the framework is already disposing.
+        RootGrid.RemoveHandler(UIElement.PointerWheelChangedEvent,
+        new PointerEventHandler(ViewMenuWheel_PointerWheelChanged));
         _textScale.Changed -= OnTextScaleChanged;
     }
 
@@ -177,6 +181,27 @@ public sealed partial class MainWindow
                 break;
             default:
                 return;   // a shortcut another handler owns
+        }
+
+        e.Handled = true;
+    }
+
+    private int _wheelDeltaRemainder;
+
+
+    private void ViewMenuWheel_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
+    {
+        if (!e.KeyModifiers.HasFlag(VirtualKeyModifiers.Control)) return;
+        if (IsModalOverlayOpen) return;
+
+        _wheelDeltaRemainder += e.GetCurrentPoint(RootGrid).Properties.MouseWheelDelta;
+        var notches = _wheelDeltaRemainder / 120;
+        _wheelDeltaRemainder -= notches * 120;
+
+        for (var i = 0; i < Math.Abs(notches); i++)
+        {
+            if (notches > 0) ZoomInCommand();
+            else ZoomOutCommand();
         }
 
         e.Handled = true;
