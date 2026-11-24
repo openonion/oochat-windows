@@ -111,6 +111,9 @@ public sealed class AgentConnectionService : IAsyncDisposable
     /// <summary>Streamed intermediate events (thinking, tool_call, …) for status UI.</summary>
     public event Action<AgentStreamEvent>? StreamEvent;
 
+    /// <summary>The latest dashboard page sent by the agent's Host. It's not sent to the chat</summary>
+    public event Action<DashboardSnapshot>? DashboardSnapshotReceived;
+
     /// <summary>Raised immediately after an INPUT frame is written to the live socket.</summary>
     public event Action? InputSent;
 
@@ -324,6 +327,12 @@ public sealed class AgentConnectionService : IAsyncDisposable
 
         return AwaitInputAsync(inputTcs, ct);
     }
+
+    /// <summary>Authenticates this connection and receives the Host's dashboard without
+    /// using chat. When <paramref name="sessionId"/> is null the Host creates a new
+    /// session, which the connection reuses if it reconnects later.</summary>
+    public Task ConnectAsync(string? sessionId = null, CancellationToken ct = default)
+        => EnsureConnectedAsync(sessionId, ct);
 
     private static async Task<string> AwaitInputAsync(
         TaskCompletionSource<string> inputTcs,
@@ -671,11 +680,10 @@ public sealed class AgentConnectionService : IAsyncDisposable
     private static AskUserRequest ParseAskUser(WireMessage msg) => AgentInteractiveParsers.ParseAskUser(msg);
 
     /// <summary>
-    /// A 50 MiB agent image expands to about 66.7 MiB as base64. Leave room for its data-URL
-    /// prefix and JSON envelope, but reject an unbounded or never-ending frame before it can
-    /// exhaust the desktop process.
+    /// Encoded dashboard data can reach 256 MiB. Cap incoming frames at that size to limit
+    /// memory use if a frame stalls.
     /// </summary>
-    public const int MaxIncomingFrameBytes = 80 * 1024 * 1024;
+    public const int MaxIncomingFrameBytes = 256 * 1024 * 1024;
     private const int RetainedIncomingFrameCapacityBytes = 1024 * 1024;
 
     internal int IncomingFrameSizeLimitBytes { get; set; } = MaxIncomingFrameBytes;
@@ -721,8 +729,8 @@ public sealed class AgentConnectionService : IAsyncDisposable
                 if (!result.EndOfMessage) continue;
 
                 // JSON is already UTF-8 on the wire. Parse this buffer in place while it remains
-                // owned by the loop; turning an 80 MiB frame into a UTF-16 string allocated up to
-                // another 160 MiB before JsonDocument copied it back into UTF-8 storage.
+                // owned by the loop; turning a 256 MiB frame into a UTF-16 string would allocate
+                // another 512 MiB before JsonDocument copied it back into UTF-8 storage.
                 var json = new ReadOnlyMemory<byte>(
                     frame.GetBuffer(),
                     0,
@@ -791,6 +799,25 @@ public sealed class AgentConnectionService : IAsyncDisposable
                     if (msg.TryGet("duration_ms", out var d) && d.ValueKind == JsonValueKind.Number)
                         LastExecutionDurationMs = d.GetDouble();
                     _inputTcs?.TrySetResult(result);
+                    return;
+                }
+
+            case "DASHBOARD_SNAPSHOT":
+                {
+                    var html = msg.GetString("html");
+                    if (html is null || Encoding.UTF8.GetByteCount(html) > 128 * 1024 * 1024)
+                        return;
+
+                    try
+                    {
+                        DashboardSnapshotReceived?.Invoke(new DashboardSnapshot(
+                            html,
+                            msg.GetString("session_id")));
+                    }
+                    catch
+                    {
+                        // Ignore subscriber errors so the agent connection stays open.
+                    }
                     return;
                 }
 

@@ -2,8 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
+using System.Globalization;
+using ConnectOnion.Protocol;
 using ConnectOnion.WinUIClient.Data;
+using ConnectOnion.WinUIClient.Models;
+using ConnectOnion.WinUIClient.Presentation;
 using ConnectOnion.WinUIClient.Services;
 using ConnectOnion.WinUIClient.Views;
 using Microsoft.UI;
@@ -13,7 +21,9 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
+using Microsoft.Web.WebView2.Core;
 using Windows.System;
+using Microsoft.UI.Xaml.Media;
 
 namespace ConnectOnion.WinUIClient;
 
@@ -41,6 +51,22 @@ public sealed partial class MainWindow : Window
     private bool _skipNextNavigationSidebarRefresh;
     private bool _isHistoryNavigationInProgress;
     private ShellNavigationContext? _currentNavigationContext;
+    private bool _isRightWorkspaceExpanded;
+    private double _rightWorkspaceWidth = 380;
+    private double _rightWorkspaceResizeStartWidth;
+    private double _rightWorkspaceResizeStartPointerX;
+    private uint _rightWorkspaceResizePointerId;
+    private bool _isRightWorkspaceResizing;
+    private string? _dashboardAgentId;
+    private AgentConfig? _dashboardAgentConfig;
+    private string? _dashboardBridgeToken;
+    private string? _dashboardDocumentSource;
+    private string? _dashboardPendingNavigationSource;
+    private Task<bool>? _dashboardWebViewInitialisation;
+    private long _dashboardLoadGeneration;
+
+    private const double RightWorkspaceMinimumWidth = 380;
+    private const double RightWorkspaceMaximumWidth = 1440;
 
     public IRelayCommand OpenWindowCommand { get; }
     public IRelayCommand ExitFromTrayCommand { get; }
@@ -50,6 +76,9 @@ public sealed partial class MainWindow : Window
         OpenWindowCommand = new RelayCommand(RestoreFromTray);
         ExitFromTrayCommand = new RelayCommand(ExitApplication);
         InitializeComponent();
+        _savedReconnectSeconds = AppServices.StartupState.Preferences.ReconnectDelaySeconds;
+        ReconnectAfterInput.Text = _savedReconnectSeconds.ToString(CultureInfo.CurrentCulture);
+        _controlCentreReady = true;
         _sessionRepository = AppServices.Sessions;
         _preferencesRepository = AppServices.Preferences;
         // Capture DI-owned services while the host is alive. Closed can run after App.Exit has
@@ -57,6 +86,7 @@ public sealed partial class MainWindow : Window
         _windowPlacementStore = AppServices.WindowPlacement;
         _textScale = AppServices.TextScale;
         _textScale.Changed += OnTextScaleChanged;
+        AppServices.RunManager.DashboardSnapshotReceived += OnAgentDashboardSnapshotReceived;
         TrackWindowLifetime();
         InitializeNotificationPresence();
         _hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
@@ -74,6 +104,7 @@ public sealed partial class MainWindow : Window
         {
             try
             {
+                UpdateRightWorkspaceForCurrentPage();
                 ShellSidebar.SetCurrentPage(ContentFrame.CurrentSourcePageType);
                 UpdateNavigationButtons();
                 CloseFindOverlay();
@@ -85,6 +116,7 @@ public sealed partial class MainWindow : Window
                 {
                     await ShellSidebar.RefreshAsync();
                 }
+                await RefreshControlCentreAgentAsync();
                 // Navigating does NOT close the sidebar, by request. Picking a conversation used
                 // to auto-collapse it at the compact width; the sidebar now stays exactly as the
                 // user left it, and the ways to close it are all explicit — the title-bar toggle,
@@ -99,10 +131,13 @@ public sealed partial class MainWindow : Window
             }
         };
         ThemeService.ThemeApplied += ApplyTitleBarTheme;
+        ThemeService.ThemeApplied += ApplyDashboardTheme;
         _sessionRepository.SessionsChanged += OnSessionsChanged;
         Closed += (_, _) =>
         {
             DisposeTrayBehavior();
+            AppServices.RunManager.DashboardSnapshotReceived -= OnAgentDashboardSnapshotReceived;
+            DetachDashboardWebView();
             DetachWindowServices();
         };
         ThemeService.RegisterRoot(RootGrid);
@@ -169,6 +204,7 @@ public sealed partial class MainWindow : Window
         if (System.Threading.Interlocked.Exchange(ref _windowServicesDetached, 1) != 0) return;
 
         ThemeService.ThemeApplied -= ApplyTitleBarTheme;
+        ThemeService.ThemeApplied -= ApplyDashboardTheme;
         ThemeService.UnregisterRoot(RootGrid);
         _sessionRepository.SessionsChanged -= OnSessionsChanged;
         ShellSidebar.NavigationRequested -= NavigateTo;
@@ -247,6 +283,7 @@ public sealed partial class MainWindow : Window
         _wasCompactLayout = isCompact;
 
         ApplySidebarWidth(windowWidth);
+        ApplyRightWorkspaceWidth();
         UpdateTitleBarLayout(windowWidth);
         UpdateZoomLayout();
         UpdateZoomPopupPosition();
@@ -420,6 +457,86 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private void RightWorkspaceResizeHandle_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        var point = e.GetCurrentPoint(MainContentArea);
+        if (!point.Properties.IsLeftButtonPressed || !_isRightWorkspaceExpanded) return;
+
+        if (RightWorkspaceColumn.ActualWidth > 0)
+            _rightWorkspaceResizeStartWidth = RightWorkspaceColumn.ActualWidth;
+        else
+            _rightWorkspaceResizeStartWidth = GetClampedRightWorkspaceWidth(_rightWorkspaceWidth);
+        _rightWorkspaceResizeStartPointerX = point.Position.X;
+        _rightWorkspaceResizePointerId = e.Pointer.PointerId;
+        _isRightWorkspaceResizing = RightWorkspaceResizeHandle.CapturePointer(e.Pointer);
+        e.Handled = _isRightWorkspaceResizing;
+    }
+
+    private void RightWorkspaceResizeHandle_PointerMoved(object sender, PointerRoutedEventArgs e)
+    {
+        if (!_isRightWorkspaceResizing
+            || e.Pointer.PointerId != _rightWorkspaceResizePointerId
+            || !_isRightWorkspaceExpanded)
+            return;
+
+        var pointerX = e.GetCurrentPoint(MainContentArea).Position.X;
+        var isRightToLeft = RootGrid.FlowDirection == FlowDirection.RightToLeft;
+        double widthDelta;
+        if (isRightToLeft)
+            widthDelta = pointerX - _rightWorkspaceResizeStartPointerX;
+        else
+            widthDelta = _rightWorkspaceResizeStartPointerX - pointerX;
+        _rightWorkspaceWidth = GetClampedRightWorkspaceWidth(
+            _rightWorkspaceResizeStartWidth + widthDelta);
+        ApplyRightWorkspaceWidth();
+        e.Handled = true;
+    }
+
+    private void RightWorkspaceResizeHandle_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        if (e.Pointer.PointerId != _rightWorkspaceResizePointerId) return;
+        EndRightWorkspaceResize();
+        e.Handled = true;
+    }
+
+    private void RightWorkspaceResizeHandle_PointerCanceled(object sender, PointerRoutedEventArgs e)
+        => EndRightWorkspaceResize();
+
+    private void RightWorkspaceResizeHandle_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
+        => _isRightWorkspaceResizing = false;
+
+    private void EndRightWorkspaceResize()
+    {
+        _isRightWorkspaceResizing = false;
+        RightWorkspaceResizeHandle.ReleasePointerCaptures();
+        ApplyRightWorkspaceWidth();
+    }
+
+    private double GetClampedRightWorkspaceWidth(double requestedWidth)
+    {
+        var windowWidth = EffectiveContentWidth;
+        if (!double.IsFinite(windowWidth) || windowWidth < 0) windowWidth = 0;
+
+        double sidebarWidth;
+        if (SidebarLayoutPolicy.IsCompactWindow(windowWidth))
+            sidebarWidth = 0;
+        else
+            sidebarWidth = ShellSidebarColumn.Width.Value;
+        var availableWidth = windowWidth - sidebarWidth - SidebarLayoutPolicy.MinimumContentWidth;
+        var effectiveMaximum = Math.Clamp(
+            availableWidth,
+            RightWorkspaceMinimumWidth,
+            RightWorkspaceMaximumWidth);
+        if (!double.IsFinite(requestedWidth)) requestedWidth = 380;
+        return Math.Clamp(requestedWidth, RightWorkspaceMinimumWidth, effectiveMaximum);
+    }
+
+    private void ApplyRightWorkspaceWidth()
+    {
+        if (!_isRightWorkspaceExpanded) return;
+        RightWorkspaceColumn.Width = new GridLength(GetClampedRightWorkspaceWidth(_rightWorkspaceWidth));
+    }
+
     private void Back_Click(object sender, RoutedEventArgs e)
         => BackCommand();
 
@@ -547,6 +664,20 @@ public sealed partial class MainWindow : Window
         titleBar.ButtonHoverForegroundColor = textPrimary;
         titleBar.ButtonPressedBackgroundColor = ThemeService.GetColor("SurfacePressedColor", isDark);
         titleBar.ButtonPressedForegroundColor = textPrimary;
+    }
+
+    private void ApplyDashboardTheme(ElementTheme theme)
+    {
+        // Handle's reconnection
+        DispatcherQueue.TryEnqueue(() =>
+            SetReconnectErrorVisualState(ReconnectErrorBadge.Visibility == Visibility.Visible));
+
+        var core = ControlCenterWebView.CoreWebView2;
+        if (core is null) return;
+
+        core.Profile.PreferredColorScheme = theme == ElementTheme.Dark
+            ? CoreWebView2PreferredColorScheme.Dark
+            : CoreWebView2PreferredColorScheme.Light;
     }
 
     private System.Threading.Tasks.Task ApplyStartupThemeAsync()
@@ -782,4 +913,705 @@ public sealed partial class MainWindow : Window
 
     private void CloseSettingsOverlay()
         => _settingsOverlay?.Hide();
+
+    // Control Centre settings and Dashboard
+    private bool _controlCentreReady;
+    private string? _controlCentreAgentId;
+    private long _controlCentreAgentLoadGeneration;
+    private string _savedDisplayName = string.Empty;
+    private int _savedReconnectSeconds = 15;
+    private bool _hasAppliedUnsavedReconnectSeconds;
+    private string _appliedDisplayName = string.Empty;
+    private bool _hasAppliedUnsavedDisplayName;
+
+
+    // Workspace tab switching
+    private void UpdateRightWorkspaceForCurrentPage()
+    {
+        var page = ContentFrame.CurrentSourcePageType;
+        bool isAvailable = page == typeof(ChatPage) || page == typeof(AgentDetailPage);
+        if (!isAvailable)
+            _isRightWorkspaceExpanded = false;
+
+        bool isExpanded = isAvailable && _isRightWorkspaceExpanded;
+
+        if (isExpanded) ApplyRightWorkspaceWidth();
+        else RightWorkspaceColumn.Width = new GridLength(0);
+
+        if (isExpanded) RightWorkspacePane.Visibility = Visibility.Visible;
+        else RightWorkspacePane.Visibility = Visibility.Collapsed;
+
+        if (isExpanded)
+            RightWorkspaceResizeHandle.Visibility = Visibility.Visible;
+        else
+            RightWorkspaceResizeHandle.Visibility = Visibility.Collapsed;
+        if (!isExpanded && _isRightWorkspaceResizing)
+        {
+            _isRightWorkspaceResizing = false;
+            RightWorkspaceResizeHandle.ReleasePointerCaptures();
+        }
+
+        if (isAvailable && !isExpanded) ExpandRightPaneButton.Visibility = Visibility.Visible;
+        else ExpandRightPaneButton.Visibility = Visibility.Collapsed;
+    }
+
+    // Apply, Save, discard
+    private void OnControlCentreFieldEdited(object sender, TextChangedEventArgs e)
+    {
+        if (!_controlCentreReady) return;
+        EvaluateControlCentreState(isApplyAttempt: false);
+    }
+
+    private void OnApplyControlCentreClicked(object sender, RoutedEventArgs e)
+    {
+        if (TryValidateReconnectSeconds(out int seconds))
+        {
+            _hasAppliedUnsavedReconnectSeconds = seconds != _savedReconnectSeconds;
+            AppServices.StartupState.Preferences.ReconnectDelaySeconds = seconds;
+        }
+        EvaluateControlCentreState(isApplyAttempt: true);
+    }
+
+    /// <summary>Loads the current agent's name to the control-centre editor </summary>
+    private async System.Threading.Tasks.Task RefreshControlCentreAgentAsync()
+    {
+        var generation = ++_controlCentreAgentLoadGeneration;
+        var agent = await AppServices.Agents.GetSelectedAgentAsync();
+        if (generation != _controlCentreAgentLoadGeneration) return;
+
+        var selectedAgentChanged = !string.Equals(
+            _dashboardAgentId,
+            agent?.Id,
+            StringComparison.Ordinal);
+        _dashboardAgentId = agent?.Id;
+        _dashboardAgentConfig = agent;
+
+        if (selectedAgentChanged)
+            await LoadAgentDashboardAsync(agent?.Id, forceReload: false);
+
+        // Preserve edits when a navigating between the same agent
+        if (agent?.Id == _controlCentreAgentId
+            && (!string.Equals(AgentDisplayNameInput.Text.Trim(), _savedDisplayName, StringComparison.Ordinal)
+                || _hasAppliedUnsavedDisplayName))
+        {
+            return;
+        }
+
+        _controlCentreAgentId = agent?.Id;
+        _savedDisplayName = agent?.DisplayName ?? string.Empty;
+        _appliedDisplayName = _savedDisplayName;
+        _hasAppliedUnsavedDisplayName = false;
+
+        _controlCentreReady = false;
+        AgentDisplayNameInput.Text = _savedDisplayName;
+        _controlCentreReady = true;
+        DisplayNameUnsavedBadge.Visibility = Visibility.Collapsed;
+
+        EvaluateControlCentreState(isApplyAttempt: false);
+    }
+
+    private async void OnSaveControlCentreClicked(object sender, RoutedEventArgs e)
+    {
+        bool reconnectValid = TryValidateReconnectSeconds(out int seconds);
+        bool displayNameValid = _controlCentreAgentId is null
+            || Models.AgentConfig.IsValidName(AgentDisplayNameInput.Text);
+        if (!reconnectValid || !displayNameValid)
+        {
+            EvaluateControlCentreState(isApplyAttempt: true);
+            return;
+        }
+
+        var displayName = AgentDisplayNameInput.Text.Trim();
+        var agentId = _controlCentreAgentId;
+        bool displayNameChanged = agentId is not null
+            && !string.Equals(displayName, _savedDisplayName, StringComparison.Ordinal);
+
+        // Update only this agent's name so other agent changes made at the same time are preserved.
+        if (displayNameChanged)
+        {
+            try
+            {
+                if (!await AppServices.Agents.UpdateNameAsync(agentId!, displayName))
+                {
+                    ValidationWarningBannerText.Text = "Could not save the agent display name. The selected agent may have changed.";
+                    ValidationWarningBanner.Visibility = Visibility.Visible;
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Warning(ex, "Could not save the agent display name");
+                ValidationWarningBannerText.Text = "Could not save the display name. Try again.";
+                ValidationWarningBanner.Visibility = Visibility.Visible;
+                return;
+            }
+
+            if (_controlCentreAgentId == agentId)
+            {
+                _savedDisplayName = displayName;
+                _appliedDisplayName = displayName;
+                _hasAppliedUnsavedDisplayName = false;
+                DisplayNameUnsavedBadge.Visibility = Visibility.Collapsed;
+            }
+            await RefreshRenamedAgentViewsAsync(agentId!);
+        }
+
+        try
+        {
+            // Reload before saving because other settings surfaces may have saved newer
+            // preferences since startup. This preserves those values while updating only the
+            // reconnect delay.
+            var preferences = await _preferencesRepository.LoadAsync();
+            preferences.ReconnectDelaySeconds = seconds;
+            await _preferencesRepository.SaveAsync(preferences);
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Warning(ex, "Could not save the automatic reconnect delay");
+            ValidationWarningBannerText.Text = "Could not save the reconnect delay. Try again.";
+            ValidationWarningBanner.Visibility = Visibility.Visible;
+            return;
+        }
+
+        if (_controlCentreAgentId == agentId)
+        {
+            _savedDisplayName = displayName;
+            _appliedDisplayName = displayName;
+            _hasAppliedUnsavedDisplayName = false;
+        }
+        _savedReconnectSeconds = seconds;
+        _hasAppliedUnsavedReconnectSeconds = false;
+        AppServices.StartupState.Preferences.ReconnectDelaySeconds = seconds;
+
+        DisplayNameUnsavedBadge.Visibility = Visibility.Collapsed;
+        ValidationWarningBanner.Visibility = Visibility.Collapsed;
+        SetReconnectErrorVisualState(isError: false);
+
+    }
+
+    private void OnDiscardControlCentreClicked(object sender, RoutedEventArgs e)
+    {
+        AgentDisplayNameInput.Text = _savedDisplayName;
+        ReconnectAfterInput.Text = _savedReconnectSeconds.ToString(CultureInfo.CurrentCulture);
+        _hasAppliedUnsavedReconnectSeconds = false;
+        AppServices.StartupState.Preferences.ReconnectDelaySeconds = _savedReconnectSeconds;
+        _hasAppliedUnsavedDisplayName = false;
+
+        DisplayNameUnsavedBadge.Visibility = Visibility.Collapsed;
+        ValidationWarningBanner.Visibility = Visibility.Collapsed;
+        SetReconnectErrorVisualState(isError: false);
+
+    }
+
+    private void EvaluateControlCentreState(bool isApplyAttempt)
+    {
+        bool reconnectValid = TryValidateReconnectSeconds(out _);
+        bool displayNameValid = _controlCentreAgentId is null
+            || Models.AgentConfig.IsValidName(AgentDisplayNameInput.Text);
+        bool displayNameChanged = _controlCentreAgentId is not null
+            && !string.Equals(
+                AgentDisplayNameInput.Text.Trim(),
+                _savedDisplayName,
+                StringComparison.Ordinal);
+
+        if (isApplyAttempt && displayNameChanged && displayNameValid)
+        {
+            _appliedDisplayName = AgentDisplayNameInput.Text.Trim();
+            _hasAppliedUnsavedDisplayName = true;
+        }
+
+        DisplayNameUnsavedBadge.Visibility = _hasAppliedUnsavedDisplayName
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        SetReconnectErrorVisualState(isError: !reconnectValid);
+
+        int appliedCount = (_hasAppliedUnsavedDisplayName ? 1 : 0)
+            + (_hasAppliedUnsavedReconnectSeconds ? 1 : 0);
+        if (isApplyAttempt && !reconnectValid)
+        {
+            ValidationWarningBannerText.Text =
+                $"Could not apply \"Reconnect after\" — Enter a value from 5 to 300 seconds. {appliedCount} change applied.";
+            ValidationWarningBanner.Visibility = Visibility.Visible;
+        }
+        else if (isApplyAttempt && !displayNameValid)
+        {
+            ValidationWarningBannerText.Text =
+                $"Could not apply \"Display name\" — Enter a name from 1 to {Models.AgentConfig.MaxNameLength} characters. {appliedCount} change applied.";
+            ValidationWarningBanner.Visibility = Visibility.Visible;
+        }
+        else if (reconnectValid)
+        {
+            ValidationWarningBanner.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private bool TryValidateReconnectSeconds(out int seconds)
+    {
+        if (int.TryParse(ReconnectAfterInput.Text.Trim(), out seconds) && seconds >= 5 && seconds <= 300)
+        {
+            return true;
+        }
+        seconds = _savedReconnectSeconds;
+        return false;
+    }
+
+    private void SetReconnectErrorVisualState(bool isError)
+    {
+        ReconnectAfterCardBorder.Background = ThemeBrushResolver.Resolve(isError ? "DangerSubtleBrush" : "SurfacePrimaryBrush");
+        ReconnectAfterCardBorder.BorderBrush = ThemeBrushResolver.Resolve(isError ? "DangerBrush" : "BorderDefaultBrush");
+        ReconnectAfterInput.Background = ThemeBrushResolver.Resolve(isError ? "DangerSubtleBrush" : "ChatInputBackgroundBrush");
+        ReconnectAfterInput.BorderBrush = ThemeBrushResolver.Resolve(isError ? "DangerBrush" : "BorderStrongBrush");
+
+        ReconnectErrorBadge.Visibility = isError ? Visibility.Visible : Visibility.Collapsed;
+        ReconnectInlineErrorRow.Visibility = isError ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void OnJumpToInvalidFieldClicked(object sender, RoutedEventArgs e)
+    {
+        ReconnectAfterInput.Focus(FocusState.Programmatic);
+        ReconnectAfterInput.SelectAll();
+    }
+
+    private void OnEditAllowedToolsClicked(object sender, RoutedEventArgs e)
+    {
+        // Hook for opening tool permission selector
+    }
+
+    private async void OnRefreshDashboardClicked(object sender, RoutedEventArgs e)
+    {
+        await LoadAgentDashboardAsync(_dashboardAgentId, forceReload: true);
+    }
+
+    private async Task LoadAgentDashboardAsync(string? agentId, bool forceReload)
+    {
+        var generation = ++_dashboardLoadGeneration;
+        if (string.IsNullOrWhiteSpace(agentId))
+        {
+            _dashboardBridgeToken = null;
+            SetDashboardStatus("Select an agent to view its dashboard.");
+            return;
+        }
+
+        var agent = _dashboardAgentConfig;
+        if (agent is null || !string.Equals(agent.Id, agentId, StringComparison.Ordinal))
+        {
+            SetDashboardStatus("Select an agent to view its dashboard.");
+            return;
+        }
+
+        if (!await EnsureDashboardWebViewAsync()) return;
+        if (generation != _dashboardLoadGeneration || agentId != _dashboardAgentId) return;
+
+        var snapshot = AppServices.RunManager.GetLatestDashboardSnapshot(agentId);
+        if (snapshot is not null)
+        {
+            RenderDashboardSnapshot(snapshot);
+        }
+        else
+        {
+            SetDashboardStatus("Connecting to the agent to receive its dashboard…");
+        }
+
+        try
+        {
+            var session = await _sessionRepository.ResolveForAgentAsync(agentId);
+            if (generation != _dashboardLoadGeneration || agentId != _dashboardAgentId) return;
+            await AppServices.RunManager.ConnectDashboardAsync(agent, session?.Id, refresh: forceReload);
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Warning(ex, "Could not connect to the agent dashboard");
+            if (generation == _dashboardLoadGeneration
+                && agentId == _dashboardAgentId
+                && AppServices.RunManager.GetLatestDashboardSnapshot(agentId) is null)
+            {
+                SetDashboardStatus("Could not connect to the agent dashboard. Check the agent connection and refresh.");
+            }
+        }
+    }
+
+    private void RenderDashboardSnapshot(DashboardSnapshot snapshot)
+    {
+        if (ControlCenterWebView.CoreWebView2 is null) return;
+
+        try
+        {
+            _dashboardBridgeToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
+            var document = BuildDashboardDocument(snapshot.Html, _dashboardBridgeToken);
+            _dashboardDocumentSource = BuildDashboardDataUri(document);
+            _dashboardPendingNavigationSource = _dashboardDocumentSource;
+            DashboardStatusOverlay.Visibility = Visibility.Visible;
+            DashboardStatusText.Text = "Loading dashboard…";
+            ControlCenterWebView.NavigateToString(document);
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Warning(ex, "Could not render the agent dashboard snapshot");
+            SetDashboardStatus("The dashboard could not be displayed. Refresh to try again.");
+        }
+    }
+
+    private async Task<bool> EnsureDashboardWebViewAsync()
+    {
+        if (_dashboardWebViewInitialisation is { } initialised)
+            return await initialised;
+
+        var initialisation = InitialiseDashboardWebViewAsync();
+        _dashboardWebViewInitialisation = initialisation;
+        var succeeded = await initialisation;
+        if (!succeeded) _dashboardWebViewInitialisation = null;
+        return succeeded;
+    }
+
+    private async Task<bool> InitialiseDashboardWebViewAsync()
+    {
+        try
+        {
+            await ControlCenterWebView.EnsureCoreWebView2Async();
+            var core = ControlCenterWebView.CoreWebView2;
+            var settings = core.Settings;
+            ApplyDashboardTheme(ThemeService.CurrentTheme);
+            settings.AreDevToolsEnabled = false;
+            settings.AreDefaultContextMenusEnabled = false;
+            settings.AreDefaultScriptDialogsEnabled = false;
+            settings.IsStatusBarEnabled = false;
+            settings.IsWebMessageEnabled = true;
+            settings.IsZoomControlEnabled = false;
+            settings.IsSwipeNavigationEnabled = false;
+            settings.IsBuiltInErrorPageEnabled = false;
+
+            core.NavigationStarting += OnDashboardNavigationStarting;
+            core.NavigationCompleted += OnDashboardNavigationCompleted;
+            core.FrameCreated += OnDashboardFrameCreated;
+            core.WebMessageReceived += OnDashboardWebMessageReceived;
+            core.NewWindowRequested += OnDashboardNewWindowRequested;
+            core.DownloadStarting += OnDashboardDownloadStarting;
+            core.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
+            core.WebResourceRequested += OnDashboardWebResourceRequested;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Warning(ex, "Could not initialise the agent dashboard WebView2");
+            SetDashboardStatus("WebView2 could not be started. Refresh to try again.");
+            return false;
+        }
+    }
+
+    private void OnDashboardNavigationStarting(
+        CoreWebView2 sender,
+        CoreWebView2NavigationStartingEventArgs args)
+    {
+        if (string.Equals(args.Uri, "about:blank", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(args.Uri, "about:srcdoc", StringComparison.OrdinalIgnoreCase)) return;
+
+        if (string.Equals(args.Uri, _dashboardPendingNavigationSource, StringComparison.Ordinal))
+        {
+            _dashboardPendingNavigationSource = null;
+            return;
+        }
+
+        args.Cancel = true;
+        var scheme = Uri.TryCreate(args.Uri, UriKind.Absolute, out var uri) ? uri.Scheme : "unknown";
+        Serilog.Log.Information(
+            "Blocked agent dashboard navigation with scheme {Scheme} and length {UriLength}",
+            scheme,
+            args.Uri.Length);
+    }
+
+    private void OnDashboardNavigationCompleted(
+        CoreWebView2 sender,
+        CoreWebView2NavigationCompletedEventArgs args)
+    {
+        if (args.IsSuccess)
+        {
+            DashboardStatusOverlay.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        Serilog.Log.Warning(
+            "Agent dashboard navigation failed for {Source}: {WebErrorStatus} (HTTP {HttpStatusCode})",
+            sender.Source,
+            args.WebErrorStatus,
+            args.HttpStatusCode);
+        _dashboardPendingNavigationSource = null;
+        SetDashboardStatus("The dashboard could not be displayed. Refresh to try again.");
+    }
+
+    private void OnDashboardFrameCreated(
+        CoreWebView2 sender,
+        CoreWebView2FrameCreatedEventArgs args)
+    {
+        var frame = args.Frame;
+        frame.NavigationStarting += (_, navigation) =>
+        {
+            if (string.Equals(navigation.Uri, "about:blank", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(navigation.Uri, "about:srcdoc", StringComparison.OrdinalIgnoreCase)) return;
+
+            navigation.Cancel = true;
+            var scheme = Uri.TryCreate(navigation.Uri, UriKind.Absolute, out var uri) ? uri.Scheme : "unknown";
+            Serilog.Log.Information("Blocked agent dashboard frame navigation with scheme {Scheme}", scheme);
+        };
+        frame.NavigationCompleted += (_, navigation) =>
+        {
+            if (!navigation.IsSuccess)
+            {
+                Serilog.Log.Warning(
+                    "Agent dashboard frame navigation failed: {WebErrorStatus} (HTTP {HttpStatusCode})",
+                    navigation.WebErrorStatus,
+                    navigation.HttpStatusCode);
+            }
+        };
+    }
+
+    private void OnDashboardWebMessageReceived(
+        CoreWebView2 sender,
+        CoreWebView2WebMessageReceivedEventArgs args)
+    {
+        if (!string.Equals(args.Source, "about:blank", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(args.Source, _dashboardDocumentSource, StringComparison.Ordinal)) return;
+
+        try
+        {
+            using var document = JsonDocument.Parse(args.WebMessageAsJson);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("type", out var type)
+                || type.ValueKind != JsonValueKind.String
+                || type.GetString() != "run_skill"
+                || !root.TryGetProperty("token", out var token)
+                || token.ValueKind != JsonValueKind.String
+                || token.GetString() != _dashboardBridgeToken
+                || !root.TryGetProperty("skill", out var skillElement)
+                || skillElement.ValueKind != JsonValueKind.String)
+            {
+                return;
+            }
+
+            var skill = skillElement.GetString();
+            var arguments = root.TryGetProperty("args", out var argsElement)
+                && argsElement.ValueKind == JsonValueKind.String
+                    ? argsElement.GetString() ?? string.Empty
+                    : string.Empty;
+            if (skill is null || skill.Length > 128 || arguments.Length > 4096) return;
+
+            _ = RunDashboardSkillSafelyAsync(skill, arguments);
+        }
+        catch (JsonException)
+        {
+            // Ignore malformed WebView messages, dashboard is untrusted
+        }
+    }
+
+    private async Task RunDashboardSkillSafelyAsync(string skill, string arguments)
+    {
+        try
+        {
+            await RunDashboardSkillAsync(skill, arguments);
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Warning(ex, "Could not run a dashboard skill action");
+            SetDashboardStatus("The dashboard action could not be sent to Chat.");
+        }
+    }
+
+    private async Task RunDashboardSkillAsync(string skill, string arguments)
+    {
+        var agent = _dashboardAgentConfig;
+        if (agent is null || !string.Equals(agent.Id, _dashboardAgentId, StringComparison.Ordinal)) return;
+
+        var publishedSkills = EndpointResolver.ParseSkillsFromInfoJson(agent.InfoJson);
+        if (ContentFrame.Content is ChatPage currentChat
+            && string.Equals(currentChat.Vm.AgentId, agent.Id, StringComparison.Ordinal)
+            && currentChat.Vm.Skills is { } chatSkills)
+        {
+            publishedSkills = chatSkills;
+        }
+        else if (ContentFrame.Content is AgentDetailPage detailPage
+                 && string.Equals(detailPage.Vm.Agent?.Id, agent.Id, StringComparison.Ordinal)
+                 && detailPage.Vm.Skills is { } detailSkills)
+        {
+            publishedSkills = detailSkills;
+        }
+
+        if (!publishedSkills.Any(candidate =>
+                string.Equals(candidate.Name, skill, StringComparison.Ordinal)))
+        {
+            SetDashboardStatus($"The agent has not published the “{skill}” skill.");
+            return;
+        }
+
+        var prompt = $"/{skill}" + (string.IsNullOrWhiteSpace(arguments) ? string.Empty : $" {arguments.Trim()}");
+        if (ContentFrame.Content is ChatPage chatPage
+            && string.Equals(chatPage.Vm.AgentId, agent.Id, StringComparison.Ordinal))
+        {
+            if (!chatPage.Vm.CanSend || chatPage.Vm.IsProcessing)
+            {
+                SetDashboardStatus("Open the chat when the agent is idle to run a dashboard action.");
+                return;
+            }
+
+            await chatPage.Vm.SendAsync(prompt);
+            return;
+        }
+
+        if (ContentFrame.Content is AgentDetailPage agentDetailPage
+            && string.Equals(agentDetailPage.Vm.Agent?.Id, agent.Id, StringComparison.Ordinal)
+            && await agentDetailPage.Vm.StartConversationAsync(prompt))
+        {
+            NavigateTo(typeof(ChatPage), forceReload: true, parameter: prompt);
+            return;
+        }
+
+        SetDashboardStatus("Open this agent’s chat to run a dashboard action.");
+    }
+
+    private void OnDashboardNewWindowRequested(
+        CoreWebView2 sender,
+        CoreWebView2NewWindowRequestedEventArgs args)
+        => args.Handled = true;
+
+    private static void OnDashboardDownloadStarting(
+        CoreWebView2 sender,
+        CoreWebView2DownloadStartingEventArgs args)
+        => args.Cancel = true;
+
+    private void OnDashboardWebResourceRequested(
+        CoreWebView2 sender,
+        CoreWebView2WebResourceRequestedEventArgs args)
+    {
+        if (Uri.TryCreate(args.Request.Uri, UriKind.Absolute, out var uri)
+            && (uri.Scheme.Equals("data", StringComparison.OrdinalIgnoreCase)
+                || uri.Scheme.Equals("about", StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        args.Response = sender.Environment.CreateWebResourceResponse(
+            new Windows.Storage.Streams.InMemoryRandomAccessStream(),
+            403,
+            "Blocked",
+            "Content-Type: text/plain; charset=utf-8");
+    }
+
+    private void SetDashboardStatus(string message)
+    {
+        DashboardStatusText.Text = message;
+        DashboardStatusOverlay.Visibility = Visibility.Visible;
+    }
+
+    private void OnAgentDashboardSnapshotReceived(string agentId, DashboardSnapshot snapshot)
+    {
+        void ShowSnapshot()
+        {
+            if (!string.Equals(agentId, _dashboardAgentId, StringComparison.Ordinal)) return;
+            RenderDashboardSnapshot(snapshot);
+        }
+
+        if (DispatcherQueue.HasThreadAccess)
+            ShowSnapshot();
+        else
+            DispatcherQueue.TryEnqueue(ShowSnapshot);
+    }
+
+    private static string BuildDashboardDocument(string html, string bridgeToken)
+    {
+        var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
+        var childHtml = BuildSandboxedDashboardHtml(html, nonce, bridgeToken);
+        var encodedHtml = Convert.ToBase64String(Encoding.UTF8.GetBytes(childHtml));
+        return DashboardShell
+            .Replace("__NONCE__", nonce, StringComparison.Ordinal)
+            .Replace("__TOKEN__", bridgeToken, StringComparison.Ordinal)
+            .Replace("__HTML__", encodedHtml, StringComparison.Ordinal);
+    }
+
+    private static string BuildDashboardDataUri(string document)
+        => $"data:text/html;charset=utf-8;base64,{Convert.ToBase64String(Encoding.UTF8.GetBytes(document))}";
+
+    private static string BuildSandboxedDashboardHtml(string html, string nonce, string bridgeToken)
+    {
+        var policy = $"""
+            <meta http-equiv="Content-Security-Policy"
+                  content="default-src 'none';
+                           img-src data:;
+                           style-src 'unsafe-inline' data:;
+                           script-src 'nonce-{nonce}';
+                           font-src data:;
+                           media-src data:;
+                           connect-src 'none';
+                           frame-src 'none';
+                           object-src 'none';
+                           base-uri 'none';
+                           form-action 'none'">
+            <meta name="color-scheme" content="light dark">
+            """;
+        var securedHtml = html;
+        var headStart = securedHtml.IndexOf("<head", StringComparison.OrdinalIgnoreCase);
+        if (headStart >= 0)
+        {
+            var headEnd = securedHtml.IndexOf('>', headStart);
+            if (headEnd >= 0) securedHtml = securedHtml.Insert(headEnd + 1, policy);
+        }
+        else
+        {
+            var htmlStart = securedHtml.IndexOf("<html", StringComparison.OrdinalIgnoreCase);
+            var htmlEnd = htmlStart < 0 ? -1 : securedHtml.IndexOf('>', htmlStart);
+            if (htmlEnd >= 0)
+                securedHtml = securedHtml.Insert(htmlEnd + 1, $"<head>{policy}</head>");
+            else
+                securedHtml = $"<!doctype html><html><head>{policy}</head><body>{securedHtml}</body></html>";
+        }
+
+        var bridge = DashboardBridgeScript.Replace("__TOKEN__", bridgeToken, StringComparison.Ordinal);
+        var scriptTag = $"<script nonce=\"{nonce}\">{bridge}</script>";
+        var bodyEnd = securedHtml.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
+        var documentEnd = bodyEnd >= 0
+            ? bodyEnd
+            : securedHtml.LastIndexOf("</html>", StringComparison.OrdinalIgnoreCase);
+        return documentEnd >= 0
+            ? securedHtml.Insert(documentEnd, scriptTag)
+            : securedHtml + scriptTag;
+    }
+
+    private static readonly string DashboardShell = ReadDashboardResource(
+        "ConnectOnion.WinUIClient.Dashboard.DashboardShell.html");
+
+    private static readonly string DashboardBridgeScript = ReadDashboardResource(
+        "ConnectOnion.WinUIClient.Dashboard.DashboardBridge.js");
+
+    private static string ReadDashboardResource(string resourceName)
+    {
+        using var stream = typeof(MainWindow).Assembly.GetManifestResourceStream(resourceName)
+            ?? throw new InvalidOperationException($"Missing embedded resource '{resourceName}'.");
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        return reader.ReadToEnd();
+    }
+
+    private void DetachDashboardWebView()
+    {
+        _dashboardLoadGeneration++;
+        if (ControlCenterWebView?.CoreWebView2 is not { } core) return;
+        core.NavigationStarting -= OnDashboardNavigationStarting;
+        core.NavigationCompleted -= OnDashboardNavigationCompleted;
+        core.FrameCreated -= OnDashboardFrameCreated;
+        core.WebMessageReceived -= OnDashboardWebMessageReceived;
+        core.NewWindowRequested -= OnDashboardNewWindowRequested;
+        core.DownloadStarting -= OnDashboardDownloadStarting;
+        core.WebResourceRequested -= OnDashboardWebResourceRequested;
+    }
+
+    private void OnCollapseRightPaneClicked(object sender, RoutedEventArgs e)
+    {
+        _isRightWorkspaceExpanded = false;
+        UpdateRightWorkspaceForCurrentPage();
+    }
+
+    private void OnExpandRightPaneClicked(object sender, RoutedEventArgs e)
+    {
+        _isRightWorkspaceExpanded = true;
+        UpdateRightWorkspaceForCurrentPage();
+    }
+
 }

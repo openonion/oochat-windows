@@ -29,6 +29,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Dashboard\DashboardShell.html"
+                      LogicalName="ConnectOnion.WinUIClient.Dashboard.DashboardShell.html" />
+    <EmbeddedResource Include="Dashboard\DashboardBridge.js"
+                      LogicalName="ConnectOnion.WinUIClient.Dashboard.DashboardBridge.js" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\Square150x150Logo.scale-100.png" />

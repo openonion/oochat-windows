@@ -1,3 +1,4 @@
+using System;
 using System.Text.Json.Serialization;
 
 namespace ConnectOnion.WinUIClient.Models;
@@ -44,6 +45,7 @@ public sealed class PreferencesSnapshot
     private const string WindowZoomKey = "window.zoomFactor";
     private const string InterfaceTextSizeKey = "ui.textSize";
     private const string VoiceCloudConsentKey = "voice.cloudTranscriptionConsent";
+    private const string ReconnectDelaySecondsKey = "connection.reconnectDelaySeconds";
 
     [JsonPropertyName("theme")]
     public ThemeMode Theme { get; set; } = ThemeMode.System;
@@ -60,6 +62,30 @@ public sealed class PreferencesSnapshot
     /// <summary>Selected capture device id, or empty for system default.</summary>
     [JsonPropertyName("microphoneDeviceId")]
     public string MicrophoneDeviceId { get; set; } = "";
+
+    /// <summary>The nominal wait between automatic agent reconnect attempts. Stored in the
+    /// extensible preference map so existing databases need no schema migration.</summary>
+    [JsonIgnore]
+    public int ReconnectDelaySeconds
+    {
+        get => ShortcutOverrides.TryGetValue(ReconnectDelaySecondsKey, out var value)
+               && int.TryParse(value, System.Globalization.NumberStyles.Integer,
+                   System.Globalization.CultureInfo.InvariantCulture, out var seconds)
+               && seconds is >= 5 and <= 300
+            ? seconds
+            : 15;
+        set
+        {
+            if (value is < 5 or > 300)
+                throw new ArgumentOutOfRangeException(nameof(value), value, "Reconnect delay must be between 5 and 300 seconds.");
+
+            if (value == 15)
+                ShortcutOverrides.Remove(ReconnectDelaySecondsKey);
+            else
+                ShortcutOverrides[ReconnectDelaySecondsKey] =
+                    value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+    }
 
     /// <summary>
     /// Whether the user has acknowledged that voice recordings are sent to OpenOnion for cloud

@@ -270,6 +270,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition x:Name="ShellSidebarColumn" Width="288" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition x:Name="RightWorkspaceColumn" Width="0" />
             </Grid.ColumnDefinitions>
 
             <Rectangle x:Uid="SidebarDismissLayer" x:Name="SidebarDismissLayer"
@@ -335,6 +336,494 @@
                     </Frame.ContentTransitions>
                 </Frame>
             </Border>
+
+            <!-- On Chat and AgentDetails pages, this expands the collapsed Dashboard -->
+            <Button x:Name="ExpandRightPaneButton"
+                    Grid.Column="1"
+                    Width="30"
+                    Height="72"
+                    Padding="0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Canvas.ZIndex="20"
+                    CornerRadius="10,0,0,10"
+                    Background="{ThemeResource AppBackgroundBrush}"
+                    BorderBrush="{ThemeResource BorderDefaultBrush}"
+                    BorderThickness="1,1,0,1"
+                    Click="OnExpandRightPaneClicked"
+                    AutomationProperties.Name="Open Dashboard"
+                    ToolTipService.ToolTip="Open Dashboard"
+                    Visibility="Collapsed">
+                <FontIcon Glyph="&#xE76B;" FontSize="{StaticResource ProductMicroFontSize}" Foreground="{ThemeResource TextTertiaryBrush}" />
+            </Button>
+
+
+            <!-- Right workspace: Dashboard -->
+            <Grid x:Name="RightWorkspacePane"
+                Grid.Column="2"
+                Background="{ThemeResource AppBackgroundBrush}"
+                BorderBrush="{ThemeResource BorderDefaultBrush}"
+                BorderThickness="1,0,0,0"
+				Visibility="Collapsed">
+
+                <Grid.RowDefinitions>
+                    <!-- Row 0: Dashboard header -->
+                    <RowDefinition Height="Auto" />
+
+                    <!-- Row 1: Dashboa -->
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Dashboard header and controls -->
+                <Border Grid.Row="0"
+                        Padding="18,10"
+                        Background="{ThemeResource SurfaceSecondaryBrush}"
+                        BorderBrush="{ThemeResource BorderDefaultBrush}"
+                        BorderThickness="0,0,0,1">
+                    <Grid ColumnSpacing="12" RowSpacing="4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0"
+                                   Text="Dashboard"
+                                   FontSize="17"
+                                   FontWeight="SemiBold"
+                                   Foreground="{ThemeResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center" />
+
+                        <StackPanel Grid.Row="0"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    Spacing="6"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center">
+                            <Button x:Name="RefreshDashboardButton"
+                                    Width="32"
+                                    Height="32"
+                                    Padding="0"
+                                    CornerRadius="8"
+                                    Background="{ThemeResource SurfaceSecondaryBrush}"
+                                    BorderBrush="{ThemeResource BorderDefaultBrush}"
+                                    BorderThickness="1"
+                                    Click="OnRefreshDashboardClicked"
+                                    AutomationProperties.Name="Refresh dashboard"
+                                    ToolTipService.ToolTip="Refresh dashboard">
+                                <FontIcon Glyph="&#xE72C;" FontSize="13" Foreground="{ThemeResource TextSecondaryBrush}" />
+                            </Button>
+
+                            <!-- Collapse Dashboard Button -->
+                            <Button x:Name="CollapseRightPaneButton"
+                                    Width="32"
+                                    Height="32"
+                                    Padding="0"
+                                    CornerRadius="8"
+                                    Background="{ThemeResource SurfaceSecondaryBrush}"
+                                    BorderBrush="{ThemeResource BorderDefaultBrush}"
+                                    BorderThickness="1"
+                                    Click="OnCollapseRightPaneClicked"
+                                    AutomationProperties.Name="Collapse dashboard"
+                                    ToolTipService.ToolTip="Collapse dashboard">
+                                <FontIcon Glyph="&#xE76C;" FontSize="13" Foreground="{ThemeResource TextSecondaryBrush}" />
+                            </Button>
+
+                        </StackPanel>
+
+                    </Grid>
+                </Border>
+                <ScrollViewer x:Name="ControlCentrePanel"
+                            Grid.Row="1"
+                            Padding="16"
+                            VerticalScrollBarVisibility="Auto"
+                            Visibility="Collapsed">
+                    <StackPanel Spacing="14">
+
+                        <!-- Top Amber Warning Banner -->
+                        <Border x:Name="ValidationWarningBanner"
+                                Background="{ThemeResource AttentionSubtleBrush}"
+                                BorderBrush="{ThemeResource WarningBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14,10"
+                                Visibility="Collapsed">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <FontIcon Grid.Column="0"
+                                        Glyph="&#xE7BA;"
+                                        FontSize="{StaticResource ProductBodyFontSize}"
+                                        Foreground="{ThemeResource WarningBrush}"
+                                        VerticalAlignment="Center" />
+
+                                <TextBlock x:Name="ValidationWarningBannerText"
+                                        Grid.Column="1"
+                                        Text="Could not apply &quot;Reconnect after&quot; — Enter a value from 5 to 300 seconds. 1 change applied."
+                                        FontSize="{StaticResource ProductCaptionFontSize}"
+                                        Foreground="{ThemeResource TextPrimaryBrush}"
+                                        TextWrapping="Wrap"
+                                        VerticalAlignment="Center" />
+
+                                <HyperlinkButton Grid.Column="2"
+                                                Content="[Jump to field]"
+                                                Padding="4,2"
+                                                FontSize="{StaticResource ProductCaptionFontSize}"
+                                                Foreground="{ThemeResource TextLinkBrush}"
+                                                Click="OnJumpToInvalidFieldClicked" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Card 1: Display name -->
+                        <Border Background="{ThemeResource SurfacePrimaryBrush}"
+                                BorderBrush="{ThemeResource BorderDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14">
+                            <StackPanel Spacing="8">
+                                <Grid>
+                                    <TextBlock Text="Display name"
+                                            FontSize="{StaticResource ProductCodeFontSize}"
+                                            FontWeight="SemiBold"
+                                            Foreground="{ThemeResource TextPrimaryBrush}"
+                                            VerticalAlignment="Center" />
+
+                                    <!-- Applied (Unsaved) Pill Badge -->
+                                    <Border x:Name="DisplayNameUnsavedBadge"
+                                            HorizontalAlignment="Right"
+                                            Background="{ThemeResource AttentionSubtleBrush}"
+                                            BorderBrush="{ThemeResource WarningBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="10"
+                                            Padding="8,2"
+                                            Visibility="Collapsed">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <FontIcon Glyph="&#xE945;"
+                                                    FontSize="{StaticResource ProductMicroFontSize}"
+                                                    Foreground="{ThemeResource WarningBrush}" />
+                                            <TextBlock Text="Applied (Unsaved)"
+                                                    FontSize="{StaticResource ProductMicroFontSize}"
+                                                    FontWeight="Medium"
+                                                    Foreground="{ThemeResource WarningBrush}" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <TextBox x:Name="AgentDisplayNameInput"
+                                        MaxLength="64"
+                                        Background="{ThemeResource ChatInputBackgroundBrush}"
+                                        BorderBrush="{ThemeResource BorderStrongBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="12,6"
+                                        FontSize="{StaticResource ProductCaptionFontSize}"
+                                        Foreground="{ThemeResource TextPrimaryBrush}"
+                                        TextChanged="OnControlCentreFieldEdited" />
+
+                                <TextBlock Text="Shown in the sidebar and chat header."
+                                        FontSize="{StaticResource ProductCaptionFontSize}"
+                                        Foreground="{ThemeResource TextTertiaryBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 2: Allowed tools -->
+                        <Border Background="{ThemeResource SurfacePrimaryBrush}"
+                                BorderBrush="{ThemeResource BorderDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Allowed tools"
+                                        FontSize="{StaticResource ProductCodeFontSize}"
+                                        FontWeight="SemiBold"
+                                        Foreground="{ThemeResource TextPrimaryBrush}" />
+
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Tool Pill Tags -->
+                                    <StackPanel x:Name="AllowedToolsTagPanel"
+                                                Grid.Column="0"
+                                                Orientation="Horizontal"
+                                                Spacing="8"
+                                                VerticalAlignment="Center">
+                                        <Border Background="{ThemeResource SurfaceTertiaryBrush}" BorderBrush="{ThemeResource BorderDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="12,4">
+                                            <TextBlock Text="send_email" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCodeFontSize}" Foreground="{ThemeResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <Border Background="{ThemeResource SurfaceTertiaryBrush}" BorderBrush="{ThemeResource BorderDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="12,4">
+                                            <TextBlock Text="read_inbox" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCodeFontSize}" Foreground="{ThemeResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <Border Background="{ThemeResource SurfaceTertiaryBrush}" BorderBrush="{ThemeResource BorderDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="12,4">
+                                            <TextBlock Text="archive_mail" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCodeFontSize}" Foreground="{ThemeResource TextPrimaryBrush}" />
+                                        </Border>
+                                    </StackPanel>
+
+									<Button x:Name="EditAllowedToolsButton"
+                                            Grid.Column="1"
+                                            Content="Edit"
+                                            Background="{ThemeResource SurfaceSecondaryBrush}"
+                                            BorderBrush="{ThemeResource BorderDefaultBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="20,4"
+                                            FontSize="{StaticResource ProductCaptionFontSize}"
+                                            Foreground="{ThemeResource TextPrimaryBrush}"
+                                            Click="OnEditAllowedToolsClicked" />
+                                </Grid>
+
+                                <TextBlock Text="Permissions granted to this agent during execution."
+                                        FontSize="{StaticResource ProductCaptionFontSize}"
+                                        Foreground="{ThemeResource TextTertiaryBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 3: Dashboard source -->
+                        <Border Background="{ThemeResource SurfacePrimaryBrush}"
+                                BorderBrush="{ThemeResource BorderDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Dashboard source"
+                                        FontSize="{StaticResource ProductCodeFontSize}"
+                                        FontWeight="SemiBold"
+                                        Foreground="{ThemeResource TextPrimaryBrush}" />
+
+                                <TextBlock Text=".co/dashboard.html"
+                                        FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                                        FontSize="{StaticResource ProductCodeFontSize}"
+                                        Foreground="{ThemeResource TextSecondaryBrush}" />
+
+                                <TextBlock Text="The Host sends the agent’s page over its authenticated connection and updates it after a run."
+                                        FontSize="{StaticResource ProductCaptionFontSize}"
+                                        TextWrapping="Wrap"
+                                        Foreground="{ThemeResource TextTertiaryBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 4: Reconnect after -->
+                        <Border x:Name="ReconnectAfterCardBorder"
+                                Background="{ThemeResource SurfacePrimaryBrush}"
+                                BorderBrush="{ThemeResource BorderDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Reconnect after"
+                                        FontSize="{StaticResource ProductCodeFontSize}"
+                                        FontWeight="SemiBold"
+                                        Foreground="{ThemeResource TextPrimaryBrush}" />
+
+                                <Grid>
+                                    <TextBox x:Name="ReconnectAfterInput"
+                                            Width="160"
+                                            HorizontalAlignment="Left"
+                                            Background="{ThemeResource ChatInputBackgroundBrush}"
+                                            BorderBrush="{ThemeResource BorderStrongBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="12,4"
+                                            FontSize="{StaticResource ProductCaptionFontSize}"
+                                            Text="15"
+                                            Foreground="{ThemeResource TextPrimaryBrush}"
+                                            TextChanged="OnControlCentreFieldEdited" />
+
+                                    <!-- Unsaved Error Pill Badge -->
+									<Border x:Name="ReconnectErrorBadge"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Center"
+                                            Background="{ThemeResource DangerSubtleBrush}"
+                                            BorderBrush="{ThemeResource DangerBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="10"
+                                            Padding="10,2"
+                                            Visibility="Collapsed">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <FontIcon Glyph="&#xE7BA;" FontSize="{StaticResource ProductMicroFontSize}" Foreground="{ThemeResource DangerBrush}" />
+                                            <TextBlock Text="Unsaved Error"
+                                                    FontSize="{StaticResource ProductMicroFontSize}"
+                                                    FontWeight="Medium"
+                                                    Foreground="{ThemeResource DangerBrush}" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <TextBlock Text="Nominal wait before each automatic retry, in seconds."
+                                        FontSize="{StaticResource ProductCaptionFontSize}"
+                                        Foreground="{ThemeResource TextTertiaryBrush}" />
+
+                                <!-- Inline Validation Error Row -->
+                                <StackPanel x:Name="ReconnectInlineErrorRow"
+                                            Orientation="Horizontal"
+                                            Spacing="6"
+                                            Visibility="Collapsed">
+                                    <FontIcon Glyph="&#xE7BA;" FontSize="{StaticResource ProductCaptionFontSize}" Foreground="{ThemeResource WarningBrush}" />
+                                    <TextBlock Text="Must be between 5 and 300 seconds."
+                                            FontSize="{StaticResource ProductCaptionFontSize}"
+                                            Foreground="{ThemeResource WarningBrush}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Sanboxed Dashboard container -->
+                <Grid x:Name="DashboardContainerPanel"
+                      Grid.Row="1"
+                      Padding="16"
+                      Visibility="Visible">
+                    <!-- Each agent's .co folder is mapped to a distinct virtual origin. -->
+                    <Border Background="{ThemeResource SurfacePrimaryBrush}"
+                            BorderBrush="{ThemeResource BorderDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="0">
+                        <Grid>
+                            <WebView2 x:Name="ControlCenterWebView"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch" />
+                            <Border x:Name="DashboardStatusOverlay"
+                                    Background="{ThemeResource SurfacePrimaryBrush}"
+                                    Padding="32"
+                                    Visibility="Visible">
+                                <StackPanel MaxWidth="360"
+                                            Spacing="14"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center">
+                                    <Border Width="52"
+                                            Height="52"
+                                            HorizontalAlignment="Center"
+                                            Background="{ThemeResource SuccessSubtleBrush}"
+                                            BorderBrush="{ThemeResource BrandPrimaryBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="15">
+                                        <FontIcon Glyph="&#xE80F;"
+                                                  FontSize="22"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Foreground="{ThemeResource BrandPrimaryBrush}" />
+                                    </Border>
+                                    <TextBlock x:Name="DashboardStatusText"
+                                               Text="Select an agent to view its dashboard."
+                                               FontSize="15"
+                                               FontWeight="SemiBold"
+                                               TextAlignment="Center"
+                                               TextWrapping="Wrap"
+                                               Foreground="{ThemeResource TextPrimaryBrush}" />
+                                    <TextBlock Text="Your agent publishes this view from .co/dashboard.html. The page runs in an isolated sandbox, and published skill buttons can start work in Chat."
+                                               FontSize="12.5"
+                                               TextAlignment="Center"
+                                               TextWrapping="Wrap"
+                                               Foreground="{ThemeResource TextTertiaryBrush}" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- Bottom action bar -->
+                <Border x:Name="WorkspaceStickyFooter"
+                        Grid.Row="1"
+                        Padding="16,0"
+                        Background="{ThemeResource SurfaceSecondaryBrush}"
+                        BorderBrush="{ThemeResource BorderDefaultBrush}"
+                        BorderThickness="0,1,0,0"
+                        Visibility="Collapsed">
+
+                    <Grid>
+
+                        <!-- Right Action Buttons -->
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center">
+
+                            <Button x:Name="DiscardChangesButton"
+                                    Content="Discard"
+                                    Background="{ThemeResource SurfaceSecondaryBrush}"
+                                    BorderBrush="{ThemeResource BorderDefaultBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="12,6"
+                                    FontSize="{StaticResource ProductCaptionFontSize}"
+                                    Foreground="{ThemeResource TextPrimaryBrush}"
+                                    Click="OnDiscardControlCentreClicked" />
+
+                            <Button x:Name="ApplyChangesButton"
+                                    Content="Apply (Ctrl+Enter)"
+                                    Background="{ThemeResource SurfaceSecondaryBrush}"
+                                    BorderBrush="{ThemeResource BorderStrongBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="12,6"
+                                    FontSize="{StaticResource ProductCaptionFontSize}"
+                                    FontWeight="Medium"
+                                    Foreground="{ThemeResource TextPrimaryBrush}"
+                                    Click="OnApplyControlCentreClicked">
+
+                                <Button.KeyboardAccelerators>
+                                    <KeyboardAccelerator Modifiers="Control" Key="Enter" />
+                                </Button.KeyboardAccelerators>
+
+                            </Button>
+
+                            <Button x:Name="SaveChangesButton"
+                                    Content="Save (Ctrl+S)"
+                                    Background="{ThemeResource BrandPrimaryBrush}"
+                                    BorderThickness="0"
+                                    CornerRadius="6"
+                                    Padding="12,6"
+                                    FontSize="{StaticResource ProductCaptionFontSize}"
+                                    FontWeight="SemiBold"
+                                    Foreground="{ThemeResource BrandOnPrimaryBrush}"
+                                    Click="OnSaveControlCentreClicked">
+
+                                <Button.KeyboardAccelerators>
+                                    <KeyboardAccelerator Modifiers="Control" Key="S" />
+                                </Button.KeyboardAccelerators>
+
+                            </Button>
+
+                        </StackPanel>
+
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <controls:SidebarResizeHandle x:Uid="RightWorkspaceResizeHandle"
+                                          x:Name="RightWorkspaceResizeHandle"
+                                          Grid.Column="2"
+                                          Canvas.ZIndex="30"
+                                          Width="10"
+                                          HorizontalAlignment="Left"
+                                          VerticalAlignment="Stretch"
+                                          Background="Transparent"
+                                          Visibility="Collapsed"
+                                          PointerPressed="RightWorkspaceResizeHandle_PointerPressed"
+                                          PointerMoved="RightWorkspaceResizeHandle_PointerMoved"
+                                          PointerReleased="RightWorkspaceResizeHandle_PointerReleased"
+                                          PointerCanceled="RightWorkspaceResizeHandle_PointerCanceled"
+                                          PointerCaptureLost="RightWorkspaceResizeHandle_PointerCaptureLost"
+                                          AutomationProperties.AutomationId="RightWorkspaceResizeHandle"
+                                          AutomationProperties.Name="Resize workspace pane"
+                                          AutomationProperties.HelpText="Drag horizontally to resize the workspace pane.">
+                <controls:SidebarResizeHandle.Template>
+                    <ControlTemplate TargetType="controls:SidebarResizeHandle">
+                        <controls:SidebarResizeCursorSurface Background="Transparent" />
+                    </ControlTemplate>
+                </controls:SidebarResizeHandle.Template>
+            </controls:SidebarResizeHandle>
         </Grid>
 
         <Grid x:Name="FloatingOverlayLayer"

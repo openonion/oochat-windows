@@ -4,8 +4,8 @@ using Microsoft.UI.Xaml.Controls;
 namespace ConnectOnion.WinUIClient.Controls;
 
 /// <summary>
-/// Invisible sidebar resize target that exposes the standard horizontal-resize cursor while the
-/// pointer is over the shell boundary. MainWindow owns the pointer-capture sizing behavior.
+/// A Invisible resize target for sidebars that shows the standard resize cursor when the user cursor
+/// is over the edge of a pane.
 /// </summary>
 public sealed class SidebarResizeHandle : Control
 {

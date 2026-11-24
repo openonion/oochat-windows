@@ -488,4 +488,7 @@
 
     </ResourceDictionary.ThemeDictionaries>
 
+    <!-- The dashboard pane used to have its own top-level Cc* brushes here. Top-level brushes
+         sit outside ThemeDictionaries, so they resolved once and never followed a light/dark
+         flip or High Contrast. The pane now uses the semantic brushes above directly. -->
 </ResourceDictionary>
