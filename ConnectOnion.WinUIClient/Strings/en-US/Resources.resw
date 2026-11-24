@@ -350,6 +350,7 @@
   <data name="RecoveryPhraseTitle" xml:space="preserve"><value>Recovery phrase</value></data>
   <data name="RecoveryPhraseWarning" xml:space="preserve"><value>Anyone with these words controls this identity. Never share them, and never paste them into a chat.</value></data>
   <data name="RecoveryCopyPhrase" xml:space="preserve"><value>Copy phrase</value></data>
+  <data name="ShowQRCode" xml:space="preserve"><value>Show QR code</value></data>
   <data name="RecoveryPrivateKeyTitle" xml:space="preserve"><value>Private key</value></data>
   <data name="RecoveryPrivateKeyWarning" xml:space="preserve"><value>Anyone with this key controls this identity. Never share it, and never paste it into a chat.</value></data>
   <data name="RecoveryCopyPrivateKey" xml:space="preserve"><value>Copy private key</value></data>
