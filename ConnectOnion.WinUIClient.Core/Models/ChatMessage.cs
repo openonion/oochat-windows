@@ -43,7 +43,7 @@ public sealed partial class ChatMessage : Common.ObservableObject
         OnboardInviteCode = "";
         FindQuery = "";
         ActiveFindMatchIndex = -1;
-        MessageFontSize = 14;
+        MessageFontSize = 15;
         AskUserFreeText = "";
         // Interactive cards start unfolded: a card that appeared collapsed would hide a question
         // the agent is currently blocked on.
@@ -88,6 +88,8 @@ public sealed partial class ChatMessage : Common.ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TimeLabel))]
+    [NotifyPropertyChangedFor(nameof(ActionTimeLabel))]
+    [NotifyPropertyChangedFor(nameof(ActionTimeToolTip))]
     [JsonPropertyName("createdAt")]
     public partial long CreatedAtUnixMs { get; set; }
 
@@ -107,6 +109,16 @@ public sealed partial class ChatMessage : Common.ObservableObject
     [NotifyPropertyChangedFor(nameof(CanSaveEdit))]
     [JsonIgnore]
     public partial string EditDraft { get; set; }
+
+    /// <summary>The turn's model/usage summary, copied onto the agent reply that ends the turn 
+    /// so it can be displayed via info button in the reply's hover actions.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasTurnUsageInfo))]
+    [JsonIgnore]
+    public partial string? TurnUsageInfo { get; set; }
+
+    [JsonIgnore]
+    public bool HasTurnUsageInfo => !string.IsNullOrEmpty(TurnUsageInfo);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ActivityHeaderTitle))]
@@ -328,6 +340,29 @@ public sealed partial class ChatMessage : Common.ObservableObject
         .ToLocalTime()
         .ToString("h:mm tt", CultureInfo.CurrentCulture);
 
+    /// <summary>Compact time for the message action row: the time of day within if the last 24 hours ("hh:mm AM/PM"), 
+    /// otherwise the date ("MMM dd"), with the year added once it is not the current one ("MMM dd, yyyy").</summary>
+    [JsonIgnore]
+    public string ActionTimeLabel
+    {
+        get
+        {
+            var local = DateTimeOffset.FromUnixTimeMilliseconds(CreatedAtUnixMs).ToLocalTime();
+            var now = DateTimeOffset.Now;
+            if (now - local < TimeSpan.FromHours(24))
+                return local.ToString("h:mm tt", CultureInfo.CurrentCulture);
+            return local.Year == now.Year
+                ? local.ToString("MMM d", CultureInfo.CurrentCulture)
+                : local.ToString("MMM d, yyyy", CultureInfo.CurrentCulture);
+        }
+    }
+
+    /// <summary>Full date and time for the action row tooltip ("MMM dd, yyyy, hh:mm AM/PM").</summary>
+    [JsonIgnore]
+    public string ActionTimeToolTip => DateTimeOffset.FromUnixTimeMilliseconds(CreatedAtUnixMs)
+        .ToLocalTime()
+        .ToString("MMM d, yyyy, h:mm tt", CultureInfo.CurrentCulture);
+
     [JsonIgnore]
     public bool CanEdit => IsUser && !HasAttachments && !string.IsNullOrWhiteSpace(Content);
 
@@ -337,17 +372,10 @@ public sealed partial class ChatMessage : Common.ObservableObject
     [JsonIgnore]
     public bool ShowUserActions => AreUserActionsVisible && !IsEditing;
 
-    /// <summary>Opacity of a message's action row (retry / edit / copy).
-    /// <para>The resting value is a contrast floor, not a taste call. These are icon-only
-    /// controls, so WCAG's 3:1 non-text minimum applies, and the row is dimmed rather than
-    /// hidden — meaning the resting alpha *is* the contrast. <c>TextSecondaryBrush</c>
-    /// (<c>#5C5C5B</c>) composited onto the light background (<c>#FAFAF9</c>) needs alpha
-    /// &gt;= 0.66 to clear 3:1; 0.75 lands at ~3.6:1 light and ~4.9:1 dark. It was 0.62, and
-    /// the XAML multiplied a second 0.78 on the button strip on top of it, for an effective
-    /// 0.48 and ~1.9:1. If you dim this further, drop the row to <c>Visibility</c> instead —
-    /// an invisible control has no contrast requirement, a faint one does.</para></summary>
+    /// <summary>Opacity of a message's action row (retry / edit / copy / info).
+    /// <para>Hidden at rest and shown fully while the message is hovered or focused.</para></summary>
     [JsonIgnore]
-    public double UserActionsOpacity => IsEditing ? 0d : ShowUserActions ? 1d : 0.75d;
+    public double UserActionsOpacity => ShowUserActions ? 1d : 0d;
 
     public void BeginEditing()
     {
@@ -416,6 +444,12 @@ public sealed partial class ChatMessage : Common.ObservableObject
 
     [JsonIgnore]
     public bool HasTurnUsageSecondary => TurnUsageSecondary.Length > 0;
+
+    /// <summary>Both usage lines joined for tooltip or flyout.</summary>
+    [JsonIgnore]
+    public string TurnUsageDisplayText => HasTurnUsageSecondary
+        ? $"{TurnUsagePrimary}\n{TurnUsageSecondary}"
+        : TurnUsagePrimary;
 
     [JsonIgnore]
     public bool IsThinkingEvent => IsActivityEvent
@@ -740,10 +774,10 @@ public sealed partial class ChatMessage : Common.ObservableObject
 
     /// <summary>Typography steps shared by message-like interactive cards. They follow the user's
     /// message-size preference while preserving a readable hierarchy at the small setting.</summary>
-    [JsonIgnore] public double CardTitleFontSize => Math.Max(14, MessageFontSize);
-    [JsonIgnore] public double CardBodyFontSize => Math.Max(12, MessageFontSize);
-    [JsonIgnore] public double CardCaptionFontSize => Math.Max(11, MessageFontSize - 2);
-    [JsonIgnore] public double CardCodeFontSize => Math.Max(12, MessageFontSize - 1);
+    [JsonIgnore] public double CardTitleFontSize => Math.Max(16, MessageFontSize);
+    [JsonIgnore] public double CardBodyFontSize => Math.Max(13, MessageFontSize);
+    [JsonIgnore] public double CardCaptionFontSize => Math.Max(12, MessageFontSize - 2);
+    [JsonIgnore] public double CardCodeFontSize => Math.Max(13, MessageFontSize - 1);
 
     /// <summary>
     /// Attachments sent by the user on this message, or images the agent produced

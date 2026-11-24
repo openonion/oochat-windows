@@ -71,7 +71,7 @@ public static class KeyNames
             [VkInsert] = "Insert",
             [VkDelete] = "Delete",
             [VkOemSemicolon] = ";",
-            [VkOemPlus] = "=",
+            [VkOemPlus] = "+",
             [VkOemComma] = ",",
             [VkOemMinus] = "-",
             [VkOemPeriod] = ".",

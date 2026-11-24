@@ -81,15 +81,20 @@ public sealed partial class MainWindow
             return false;
         }
 
+        await RefreshRenamedAgentViewsAsync(agent.Id);
+        return true;
+    }
+
+    private async Task RefreshRenamedAgentViewsAsync(string agentId)
+    {
         try { await ShellSidebar.RefreshAsync(); }
         catch { /* The persisted name will appear on the next sidebar refresh. */ }
-        try { if (_settingsOverlay is not null) await _settingsOverlay.RefreshAgentsAsync(); }
-        catch { /* The settings list retries when the category is reopened. */ }
-        try { await RefreshRenamedAgentSurfaceAsync(agent.Id); }
+        try { await RefreshRenamedAgentSurfaceAsync(agentId); }
         catch { /* The current page reloads from storage on its next navigation. */ }
         try { await RefreshTrayRecentChatsAsync(); }
         catch { /* The tray menu performs its own freshness check when opened. */ }
-        return true;
+        try { await RefreshControlCentreAgentAsync(); }
+        catch { /* Old name will still show until next nav */ }
     }
 
     private async Task RefreshRenamedAgentSurfaceAsync(string agentId)

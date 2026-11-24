@@ -7,13 +7,17 @@
     <StackPanel MinWidth="0" HorizontalAlignment="Stretch" Spacing="16">
         <TextBlock x:Uid="IdentityDescription" Text="This desktop client uses an Ed25519 identity to sign ConnectOnion messages. Agents recognize you by the address below."
                    TextWrapping="Wrap" Foreground="{ThemeResource TextSecondaryBrush}" />
-        <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch">
+        <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch" Background="{ThemeResource GreenBackgroundBrush}">
             <StackPanel Spacing="18">
                 <Grid MinWidth="0" ColumnSpacing="14">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" MinWidth="0" Spacing="4">
-                <TextBlock x:Uid="IdentityAddress" Text="Address" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                        <TextBlock x:Name="AddressText" TextWrapping="Wrap" IsTextSelectionEnabled="True" FontFamily="{StaticResource JetBrainsMonoFontFamily}" />
+                        <TextBlock x:Uid="IdentityAddress" Text="Address" Style="{StaticResource ProductBodyStrongTextStyle}" />
+                        <TextBlock x:Name="AddressText" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                                   FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCodeFontSize}" />
                     </StackPanel>
                     <Button x:Uid="IdentityCopyAddress" Grid.Column="1" Tag="address" Padding="10,6" VerticalAlignment="Center"
                             Click="Copy_Click" AutomationProperties.Name="Copy identity address" ToolTipService.ToolTip="Copy address">
@@ -21,10 +25,14 @@
                     </Button>
                 </Grid>
                 <Grid MinWidth="0" ColumnSpacing="14">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" MinWidth="0" Spacing="4">
-                <TextBlock x:Uid="IdentityPublicKey" Text="Public key" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                        <TextBlock x:Name="PublicKeyText" TextWrapping="Wrap" IsTextSelectionEnabled="True" FontFamily="{StaticResource JetBrainsMonoFontFamily}" />
+                        <TextBlock x:Uid="IdentityPublicKey" Text="Public key" Style="{StaticResource ProductBodyStrongTextStyle}" />
+                        <TextBlock x:Name="PublicKeyText" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                                   FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCodeFontSize}" />
                     </StackPanel>
                     <Button x:Uid="IdentityCopyPublicKey" Grid.Column="1" Tag="publicKey" Padding="10,6" VerticalAlignment="Center"
                             Click="Copy_Click" AutomationProperties.Name="Copy public key" ToolTipService.ToolTip="Copy public key">
@@ -32,17 +40,18 @@
                     </Button>
                 </Grid>
                 <StackPanel Spacing="4">
-                <TextBlock x:Uid="IdentityStorage" Text="Storage" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock x:Uid="IdentityStorage" Text="Storage" Style="{StaticResource ProductBodyStrongTextStyle}" />
                     <TextBlock x:Name="StorageText" TextWrapping="Wrap" IsTextSelectionEnabled="True"
-                               FontFamily="{StaticResource JetBrainsMonoFontFamily}" Foreground="{ThemeResource TextSecondaryBrush}" />
+                               FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCodeFontSize}"
+                               Foreground="{ThemeResource TextSecondaryBrush}" />
                 </StackPanel>
                 <TextBlock x:Uid="IdentityStorageDescription" Text="Your private identity is encrypted on this device with your Windows account, which is what keeps the database safe — and also why a copy of it cannot be opened anywhere else. Use the backup below to move this identity to another machine."
-                           TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}"
+                           TextWrapping="Wrap" Style="{StaticResource ProductCaptionTextStyle}"
                            Foreground="{ThemeResource TextSecondaryBrush}" />
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch">
+        <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch" Background="{ThemeResource GreenBackgroundBrush}">
             <StackPanel Spacing="12">
                 <Grid ColumnSpacing="10">
                     <Grid.ColumnDefinitions>
@@ -50,10 +59,10 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel Spacing="3">
-                <TextBlock x:Uid="IdentityAccount" Text="OpenOnion account" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                <TextBlock x:Uid="IdentityAccountDescription" Text="Signed in with this device identity. The API key remains in memory only."
+                        <TextBlock x:Uid="IdentityAccount" Text="OpenOnion account" Style="{StaticResource ProductBodyStrongTextStyle}" />
+                        <TextBlock x:Uid="IdentityAccountDescription" Text="Signed in with this device identity. The API key remains in memory only."
                                    TextWrapping="Wrap"
-                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Style="{StaticResource ProductCaptionTextStyle}"
                                    Foreground="{ThemeResource TextSecondaryBrush}" />
                     </StackPanel>
                     <Button x:Uid="IdentityRefresh" Grid.Column="1"
@@ -84,15 +93,15 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Spacing="2">
-                            <TextBlock x:Uid="IdentityBalance" Text="Balance" Style="{StaticResource CaptionTextBlockStyle}" />
+                            <TextBlock x:Uid="IdentityBalance" Text="Balance" Style="{StaticResource ProductCaptionTextStyle}" />
                             <TextBlock x:Name="BalanceText" FontSize="{StaticResource ProductSectionTitleFontSize}" FontWeight="SemiBold" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Spacing="2">
-                            <TextBlock x:Uid="IdentityPurchased" Text="Purchased" Style="{StaticResource CaptionTextBlockStyle}" />
+                            <TextBlock x:Uid="IdentityPurchased" Text="Purchased" Style="{StaticResource ProductCaptionTextStyle}" />
                             <TextBlock x:Name="PurchasedText" />
                         </StackPanel>
                         <StackPanel Grid.Column="2" Spacing="2">
-                            <TextBlock x:Uid="IdentitySpent" Text="Spent" Style="{StaticResource CaptionTextBlockStyle}" />
+                            <TextBlock x:Uid="IdentitySpent" Text="Spent" Style="{StaticResource ProductCaptionTextStyle}" />
                             <TextBlock x:Name="SpentText" />
                         </StackPanel>
                     </Grid>
@@ -104,11 +113,12 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel MinWidth="0" Spacing="3">
-                    <TextBlock x:Uid="IdentityApiKey" Text="API key" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <TextBlock x:Uid="IdentityApiKey" Text="API key" Style="{StaticResource ProductBodyStrongTextStyle}" />
                             <TextBlock x:Uid="IdentityMaskedKey" x:Name="ApiKeyText"
                                        TextTrimming="CharacterEllipsis"
                                        IsTextSelectionEnabled="True"
                                        FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                                       FontSize="{StaticResource ProductCodeFontSize}"
                                        AutomationProperties.Name="Masked OpenOnion API key" />
                         </StackPanel>
                         <Button x:Uid="IdentityReveal" x:Name="RevealApiKeyButton" AutomationProperties.AutomationId="RevealApiKeyButton"
@@ -131,11 +141,27 @@
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch">
-            <StackPanel Spacing="12">
-                <TextBlock x:Uid="IdentityBackup" Text="Backup and recovery" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                <TextBlock x:Name="BackupDescriptionText" TextWrapping="Wrap" MinWidth="0"
+        <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch" Background="{ThemeResource GreenBackgroundBrush}">
+            <StackPanel Spacing="14">
+                <TextBlock x:Uid="IdentitySharing" Text="Identity Sharing" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock x:Uid="IdentitySharingDescription" Text="Manage devices connected to this identity" TextWrapping="Wrap" MinWidth="0"
                            Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextSecondaryBrush}" />
+
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button x:Uid="IdentityListDevicesAction" x:Name="ListDevicesButton" Content="List Devices"
+                            Click="ListDevices_Click"
+                            AutomationProperties.AutomationId="ListDevicesButton"
+                            AutomationProperties.Name="List devices" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch" Background="{ThemeResource GreenBackgroundBrush}">
+            <StackPanel Spacing="12">
+                <TextBlock x:Uid="IdentityBackup" Text="Backup and recovery" Style="{StaticResource ProductBodyStrongTextStyle}" />
+                <TextBlock x:Name="BackupDescriptionText" TextWrapping="Wrap" MinWidth="0"
+                           Style="{StaticResource ProductCaptionTextStyle}"
                            Foreground="{ThemeResource TextSecondaryBrush}" />
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <!-- The button's uid must differ from the label's: an x:Uid is a key into one
@@ -176,5 +202,58 @@
                          IsClosable="True" />
             </StackPanel>
         </Border>
+        <StackPanel x:Name="DevicesPanel" MinWidth="0" HorizontalAlignment="Stretch" Spacing="16" Visibility="Collapsed">
+            <Button x:Uid="IdentityDevicesBack" x:Name="DevicesBackButton" Click="DevicesBack_Click"
+                HorizontalAlignment="Left" Padding="10,6"
+                AutomationProperties.AutomationId="DevicesBackButton"
+                AutomationProperties.Name="Back to Identity">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ic:FluentIcon Icon="ArrowLeft" IconVariant="Regular" IconSize="Size16" />
+                    <TextBlock x:Uid="IdentityDevicesBackLabel" Text="Identity" />
+                </StackPanel>
+            </Button>
+
+            <StackPanel Spacing="4">
+                <TextBlock x:Uid="IdentityLoggedInDevicesTitle" Text="Logged-in Devices"
+                       Style="{StaticResource SubtitleTextBlockStyle}"
+                       AutomationProperties.HeadingLevel="Level2" />
+                <TextBlock x:Uid="IdentityLoggedInDevicesDescription" Text="Devices connected to your account." TextWrapping="Wrap" MinWidth="0"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextSecondaryBrush}" />
+            </StackPanel>
+
+            <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch" Background="{ThemeResource GreenBackgroundBrush}">
+                <StackPanel Spacing="12">
+                    <TextBlock x:Uid="IdentityCurrentDevice" Text="Current Device"
+                           Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <Grid MinWidth="0" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8"
+                            VerticalAlignment="Center"
+                            Background="{ThemeResource SettingsContentBrush}"
+                            BorderBrush="{ThemeResource DividerBrush}" BorderThickness="1">
+                            <ic:FluentIcon Icon="Desktop" IconVariant="Regular" IconSize="Size16"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{ThemeResource TextSecondaryBrush}" />
+                        </Border>
+
+                        <StackPanel Grid.Column="1" MinWidth="0" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock x:Name="DeviceNameText"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                   TextTrimming="CharacterEllipsis" IsTextSelectionEnabled="True" />
+                            <TextBlock x:Name="DeviceOsText"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   FontFamily="{StaticResource JetBrainsMonoFontFamily}"
+                                   Foreground="{ThemeResource TextSecondaryBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
     </StackPanel>
 </UserControl>

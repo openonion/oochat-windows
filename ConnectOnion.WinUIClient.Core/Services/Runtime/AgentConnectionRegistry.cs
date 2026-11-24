@@ -30,7 +30,8 @@ public sealed class AgentConnectionRegistry
     public AgentConnectionRegistry(
         HttpClient http,
         Func<AgentConfig, AgentConnectionService>? connectionFactory = null,
-        Func<long>? clock = null)
+        Func<long>? clock = null,
+        Func<int>? reconnectDelaySeconds = null)
     {
         ArgumentNullException.ThrowIfNull(http);
         _connectionFactory = connectionFactory
@@ -38,7 +39,11 @@ public sealed class AgentConnectionRegistry
                 agent.Address,
                 agent.DirectUrl,
                 IdentityStore.EnsureIdentity(),
-                http));
+                http,
+                reconnectPolicy: reconnectDelaySeconds is null
+                    ? null
+                    : new ReconnectPolicy(fixedDelayProvider: () =>
+                        TimeSpan.FromSeconds(Math.Clamp(reconnectDelaySeconds(), 5, 300)))));
         _clock = clock ?? (() => Environment.TickCount64);
     }
 

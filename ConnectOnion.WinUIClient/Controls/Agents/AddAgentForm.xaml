@@ -254,7 +254,7 @@
                     <Button MinWidth="116"
                             MaxWidth="116"
                             Height="40"
-                            Style="{StaticResource AccentButtonStyle}"
+                            Style="{StaticResource PaletteAccentButtonStyle}"
                             IsEnabled="{x:Bind Vm.CanAdd, Mode=OneWay}"
                             Click="AddAgent_Click"
                             AutomationProperties.AutomationId="SubmitAgentButton"

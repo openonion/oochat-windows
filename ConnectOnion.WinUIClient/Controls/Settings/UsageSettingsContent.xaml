@@ -109,13 +109,13 @@
                 <ColumnDefinition x:Name="RangeColumn3" Width="Auto" />
             </Grid.ColumnDefinitions>
             <RadioButton x:Uid="UsageToday" x:Name="TodayRange" AutomationProperties.AutomationId="TodayRange" GroupName="UsageRange" Content="Today"
-                         Click="Range_Click" Tag="Today" />
+                         Click="Range_Click" Tag="Today" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}" />
             <RadioButton x:Uid="UsageWeek" x:Name="Week" Grid.Column="1" AutomationProperties.AutomationId="Week" GroupName="UsageRange" Content="Last 7 days" IsChecked="True"
-                         Click="Range_Click" Tag="Last7Days" />
+                         Click="Range_Click" Tag="Last7Days" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}" />
             <RadioButton x:Uid="UsageMonth" x:Name="Month" Grid.Column="2" AutomationProperties.AutomationId="Month" GroupName="UsageRange" Content="Last 30 days"
-                         Click="Range_Click" Tag="Last30Days" />
+                         Click="Range_Click" Tag="Last30Days" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}" />
             <RadioButton x:Uid="UsageAllTime" x:Name="AllTime" Grid.Column="3" AutomationProperties.AutomationId="AllTime" GroupName="UsageRange" Content="All time"
-                         Click="Range_Click" Tag="AllTime" />
+                         Click="Range_Click" Tag="AllTime" FontFamily="{StaticResource ProductFontFamily}" FontSize="{StaticResource ProductBodyFontSize}" />
         </Grid>
 
         <ProgressRing IsActive="{x:Bind Vm.IsLoading, Mode=OneWay}"
@@ -139,22 +139,22 @@
 
                 <StackPanel Grid.Column="0" Spacing="2">
                     <TextBlock Text="{x:Bind Vm.TotalTokensText, Mode=OneWay}" FontSize="{StaticResource ProductSectionTitleFontSize}" FontWeight="SemiBold" />
-                        <TextBlock x:Uid="UsageTotalTokens" Text="Total tokens" Style="{StaticResource CaptionTextBlockStyle}"
+                        <TextBlock x:Uid="UsageTotalTokens" Text="Total tokens" Style="{StaticResource ProductCaptionTextStyle}"
                                Foreground="{ThemeResource TextSecondaryBrush}" />
                 </StackPanel>
                 <StackPanel x:Name="InputTotal" Grid.Column="1" Spacing="2">
                     <TextBlock Text="{x:Bind Vm.TotalInputTokensText, Mode=OneWay}" FontSize="{StaticResource ProductSectionTitleFontSize}" FontWeight="SemiBold" />
-                        <TextBlock x:Uid="UsageInput" Text="Input" Style="{StaticResource CaptionTextBlockStyle}"
+                        <TextBlock x:Uid="UsageInput" Text="Input" Style="{StaticResource ProductCaptionTextStyle}"
                                Foreground="{ThemeResource TextSecondaryBrush}" />
                 </StackPanel>
                 <StackPanel x:Name="OutputTotal" Grid.Column="2" Spacing="2">
                     <TextBlock Text="{x:Bind Vm.TotalOutputTokensText, Mode=OneWay}" FontSize="{StaticResource ProductSectionTitleFontSize}" FontWeight="SemiBold" />
-                        <TextBlock x:Uid="UsageOutput" Text="Output" Style="{StaticResource CaptionTextBlockStyle}"
+                        <TextBlock x:Uid="UsageOutput" Text="Output" Style="{StaticResource ProductCaptionTextStyle}"
                                Foreground="{ThemeResource TextSecondaryBrush}" />
                 </StackPanel>
                 <StackPanel x:Name="CallsTotal" Grid.Column="3" Spacing="2">
                     <TextBlock Text="{x:Bind Vm.TotalCallsText, Mode=OneWay}" FontSize="{StaticResource ProductSectionTitleFontSize}" FontWeight="SemiBold" />
-                        <TextBlock x:Uid="UsageLlmCalls" Text="LLM calls" Style="{StaticResource CaptionTextBlockStyle}"
+                        <TextBlock x:Uid="UsageLlmCalls" Text="LLM calls" Style="{StaticResource ProductCaptionTextStyle}"
                                Foreground="{ThemeResource TextSecondaryBrush}" />
                 </StackPanel>
             </Grid>
@@ -164,7 +164,7 @@
         <Border Style="{StaticResource SettingsSectionStyle}" HorizontalAlignment="Stretch"
                 Visibility="{x:Bind Vm.ShowContent, Mode=OneWay, Converter={StaticResource BoolToVis}}">
             <StackPanel Spacing="{StaticResource Spacing16}">
-                <TextBlock x:Uid="UsageByModel" Text="By model" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock x:Uid="UsageByModel" Text="By model" Style="{StaticResource ProductBodyStrongTextStyle}" />
 
                 <ItemsControl ItemsSource="{x:Bind Vm.Rows, Mode=OneWay}">
                     <ItemsControl.ItemTemplate>
@@ -176,7 +176,7 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{x:Bind Model}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductBodyFontSize}"
+                                    <TextBlock Text="{x:Bind Model}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCodeFontSize}"
                                                TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                                     <TextBlock Grid.Column="1" Text="{x:Bind TotalTokensText}"
                                                FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -192,20 +192,20 @@
                                              AutomationProperties.AccessibilityView="Raw" />
 
                                 <StackPanel Orientation="Horizontal" Spacing="{StaticResource Spacing16}">
-                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}"
+                                    <TextBlock Style="{StaticResource ProductCaptionTextStyle}"
                                                Foreground="{ThemeResource TextSecondaryBrush}">
                                         <Run Text="{x:Bind CallsText}" /><Run x:Uid="UsageCallsSuffix" Text=" calls" />
                                     </TextBlock>
-                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}"
+                                    <TextBlock Style="{StaticResource ProductCaptionTextStyle}"
                                                Foreground="{ThemeResource TextSecondaryBrush}">
                                         <Run Text="{x:Bind InputTokensText}" /><Run x:Uid="UsageInputSuffix" Text=" in" />
                                     </TextBlock>
-                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}"
+                                    <TextBlock Style="{StaticResource ProductCaptionTextStyle}"
                                                Foreground="{ThemeResource TextSecondaryBrush}">
                                         <Run Text="{x:Bind OutputTokensText}" /><Run x:Uid="UsageOutputSuffix" Text=" out" />
                                     </TextBlock>
                                     <TextBlock Text="{x:Bind CacheText}"
-                                               Style="{StaticResource CaptionTextBlockStyle}"
+                                               Style="{StaticResource ProductCaptionTextStyle}"
                                                Foreground="{ThemeResource TextTertiaryBrush}"
                                                Visibility="{x:Bind HasCacheHits, Converter={StaticResource BoolToVis}}" />
                                 </StackPanel>
@@ -220,7 +220,7 @@
         <StackPanel Spacing="6" Margin="0,36" HorizontalAlignment="Center"
                     Visibility="{x:Bind Vm.ShowEmptyState, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                     <TextBlock x:Uid="UsageEmpty" Text="No usage recorded yet" HorizontalAlignment="Center"
-                       Style="{StaticResource BodyStrongTextBlockStyle}" />
+                       Style="{StaticResource ProductBodyStrongTextStyle}" />
                     <TextBlock x:Uid="UsageEmptyHint" Text="Token usage appears here after an agent replies."
                        HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
                        Foreground="{ThemeResource TextSecondaryBrush}" />
@@ -234,7 +234,7 @@
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="{x:Bind Vm.FirstRecordedText, Mode=OneWay}"
                        VerticalAlignment="Center" TextWrapping="Wrap"
-                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Style="{StaticResource ProductCaptionTextStyle}"
                        Foreground="{ThemeResource TextTertiaryBrush}"
                        Visibility="{x:Bind Vm.HasFirstRecorded, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
             <Button x:Uid="UsageClear" x:Name="ClearButton" AutomationProperties.AutomationId="ClearButton" Grid.Column="1" Content="Clear usage history"

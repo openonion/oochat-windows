@@ -73,9 +73,9 @@
                                                 <TextBlock Text="&#xE76C;" FontFamily="Segoe Fluent Icons" FontSize="{StaticResource ProductMicroFontSize}"
                                                     Visibility="{x:Bind IsExpanded, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
                                             </Grid>
-                                            <TextBlock Grid.Column="1" Text="{x:Bind DisplayPath}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCaptionFontSize}"
+                                            <TextBlock Grid.Column="1" Text="{x:Bind DisplayPath}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCodeFontSize}"
                                                 TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind FullPath}" />
-                                            <TextBlock Grid.Column="2" Text="{x:Bind ChangeSummary}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCaptionFontSize}"
+                                            <TextBlock Grid.Column="2" Text="{x:Bind ChangeSummary}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCodeFontSize}"
                                                 Foreground="{ThemeResource TextTertiaryBrush}" />
                                         </Grid>
                                     </Button>
@@ -87,12 +87,12 @@
                                                     AutomationProperties.Name="{x:Bind AccessibilityName}">
                                                     <Grid>
                                                         <Grid.ColumnDefinitions><ColumnDefinition Width="50" /><ColumnDefinition Width="22" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                                        <TextBlock Text="{x:Bind DisplayLineNumber}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCaptionFontSize}" Padding="8,2" TextAlignment="Right" Foreground="{ThemeResource TextTertiaryBrush}" />
-                                                        <TextBlock Grid.Column="1" Text="{x:Bind Marker}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCaptionFontSize}" Padding="6,2" TextAlignment="Center" />
+                                                        <TextBlock Text="{x:Bind DisplayLineNumber}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCodeFontSize}" Padding="8,2" TextAlignment="Right" Foreground="{ThemeResource TextTertiaryBrush}" />
+                                                        <TextBlock Grid.Column="1" Text="{x:Bind Marker}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCodeFontSize}" Padding="6,2" TextAlignment="Center" />
                                                         <Grid Grid.Column="2" MinWidth="0">
-                                                            <TextBlock Text="{x:Bind Content}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCaptionFontSize}" Padding="4,2,14,2" TextWrapping="NoWrap" IsTextSelectionEnabled="True"
+                                                            <TextBlock Text="{x:Bind Content}" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCodeFontSize}" Padding="4,2,14,2" TextWrapping="NoWrap" IsTextSelectionEnabled="True"
                                                                 Visibility="{x:Bind IsWrapped, Mode=OneWay, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
-                                                            <TextBlock Text="{x:Bind Content}" MinWidth="0" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCaptionFontSize}" Padding="4,2,14,2" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                                                            <TextBlock Text="{x:Bind Content}" MinWidth="0" FontFamily="{StaticResource JetBrainsMonoFontFamily}" FontSize="{StaticResource ProductCodeFontSize}" Padding="4,2,14,2" TextWrapping="Wrap" IsTextSelectionEnabled="True"
                                                                 Visibility="{x:Bind IsWrapped, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
                                                         </Grid>
                                                     </Grid>

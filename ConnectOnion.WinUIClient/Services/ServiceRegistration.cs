@@ -8,6 +8,7 @@ using ConnectOnion.WinUIClient.Services.Speech;
 using ConnectOnion.WinUIClient.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Logging;
 using Polly;
 
 namespace ConnectOnion.WinUIClient.Services;
@@ -90,13 +91,15 @@ public static class ServiceRegistration
 
         // ---- Presence + runtime ----
         services.AddSingleton<AgentPresenceService>();
-        // AgentSessionManager(HttpClient, ConversationRepository, UsageRepository?, ILogger?,
-        // NotificationCoordinator?) — auto-wired. The optional parameters are filled from the
-        // container when the type is registered and fall back to their defaults when it isn't,
-        // which is what lets a headless test construct this with two arguments. The coordinator is
-        // registered below; order does not matter to the container, and there is no cycle back to
-        // this type.
-        services.AddSingleton<AgentSessionManager>();
+        // Read the current setting on each retry so Control Centre changes apply to live connections.
+        services.AddSingleton<AgentSessionManager>(sp => new AgentSessionManager(
+            http: sp.GetRequiredService<HttpClient>(),
+            conversations: sp.GetRequiredService<ConversationRepository>(),
+            usage: sp.GetRequiredService<UsageRepository>(),
+            logger: sp.GetRequiredService<ILogger<AgentSessionManager>>(),
+            notifications: sp.GetRequiredService<NotificationCoordinator>(),
+            reconnectDelaySeconds: () =>
+                sp.GetRequiredService<StartupStateService>().Preferences.ReconnectDelaySeconds));
 
         // ---- Notification subsystem ----
         services.AddSingleton<WindowPresenceService>();
